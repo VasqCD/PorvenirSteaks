@@ -33,6 +33,31 @@ android {
 
 dependencies {
 
+    // Retrofit para API REST
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.9.3'
+
+    // Glide para cargar imágenes
+    implementation 'com.github.bumptech.glide:glide:4.16.0'
+
+    // Firebase para notificaciones
+    implementation platform('com.google.firebase:firebase-bom:32.5.0')
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-analytics'
+
+    // Room para base de datos local
+    implementation 'androidx.room:room-runtime:2.6.1'
+    annotationProcessor 'androidx.room:room-compiler:2.6.1'
+
+    // Location para mapas/ubicación
+    implementation 'com.google.android.gms:play-services-location:21.0.1'
+    implementation 'com.google.android.gms:play-services-maps:18.2.0'
+
+    // Otros elementos útiles
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0' // Para gráficos
+
     implementation libs.appcompat
     implementation libs.material
     implementation libs.constraintlayout
