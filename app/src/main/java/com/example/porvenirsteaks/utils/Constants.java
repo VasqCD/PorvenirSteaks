@@ -1,7 +1,7 @@
 package com.example.porvenirsteaks.utils;
 
 public class Constants {
-    public static final String BASE_URL = "http://tu-dominio-api.com/api/";
+    public static final String BASE_URL = "https://porvenirsteaks.icu/api/";
 
     // Estados de pedido
     public static final String ESTADO_PENDIENTE = "pendiente";
