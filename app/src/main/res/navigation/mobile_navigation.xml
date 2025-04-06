@@ -12,14 +12,66 @@
         tools:layout="@layout/fragment_home" />
 
     <fragment
-        android:id="@+id/nav_gallery"
-        android:name="com.example.porvenirsteaks.ui.gallery.GalleryFragment"
-        android:label="@string/menu_gallery"
-        tools:layout="@layout/fragment_gallery" />
+        android:id="@+id/nav_productos"
+        android:name="com.example.porvenirsteaks.ui.productos.ProductosFragment"
+        android:label="Productos"
+        tools:layout="@layout/fragment_productos">
+        <action
+            android:id="@+id/action_nav_productos_to_detalleProductoFragment"
+            app:destination="@id/detalleProductoFragment" />
+    </fragment>
 
     <fragment
-        android:id="@+id/nav_slideshow"
-        android:name="com.example.porvenirsteaks.ui.slideshow.SlideshowFragment"
-        android:label="@string/menu_slideshow"
-        tools:layout="@layout/fragment_slideshow" />
+        android:id="@+id/detalleProductoFragment"
+        android:name="com.example.porvenirsteaks.ui.productos.DetalleProductoFragment"
+        android:label="Detalle del Producto"
+        tools:layout="@layout/fragment_detalle_producto">
+        <argument
+            android:name="producto_id"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_carrito"
+        android:name="com.example.porvenirsteaks.ui.carrito.CarritoFragment"
+        android:label="Carrito"
+        tools:layout="@layout/fragment_carrito" />
+
+    <fragment
+        android:id="@+id/nav_pedidos"
+        android:name="com.example.porvenirsteaks.ui.pedidos.PedidosFragment"
+        android:label="Mis Pedidos"
+        tools:layout="@layout/fragment_pedidos">
+        <action
+            android:id="@+id/action_nav_pedidos_to_detallePedidoFragment"
+            app:destination="@id/detallePedidoFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/detallePedidoFragment"
+        android:name="com.example.porvenirsteaks.ui.pedidos.DetallePedidoFragment"
+        android:label="Detalle de Pedido"
+        tools:layout="@layout/fragment_detalle_pedido">
+        <argument
+            android:name="pedido_id"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_ubicaciones"
+        android:name="com.example.porvenirsteaks.ui.ubicaciones.UbicacionesFragment"
+        android:label="Mis Ubicaciones"
+        tools:layout="@layout/fragment_ubicaciones" />
+
+    <fragment
+        android:id="@+id/nav_notificaciones"
+        android:name="com.example.porvenirsteaks.ui.notificaciones.NotificacionesFragment"
+        android:label="Notificaciones"
+        tools:layout="@layout/fragment_notificaciones" />
+
+    <fragment
+        android:id="@+id/nav_perfil"
+        android:name="com.example.porvenirsteaks.ui.perfil.PerfilFragment"
+        android:label="Mi Perfil"
+        tools:layout="@layout/fragment_perfil" />
 </navigation>
