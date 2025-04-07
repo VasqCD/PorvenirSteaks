@@ -45,4 +45,16 @@ public class AuthViewModel extends AndroidViewModel {
     public LiveData<Resource<Boolean>> logout() {
         return repository.logout();
     }
+
+    public LiveData<Resource<Map<String, Object>>> reenviarCodigo(String email) {
+        return repository.reenviarCodigo(email);
+    }
+
+    public LiveData<Resource<Map<String, Object>>> recuperarPassword(String email) {
+        return repository.recuperarPassword(email);
+    }
+
+    public LiveData<Resource<Map<String, Object>>> cambiarPassword(String email, String codigo, String password, String passwordConfirmation) {
+        return repository.cambiarPassword(email, codigo, password, passwordConfirmation);
+    }
 }
