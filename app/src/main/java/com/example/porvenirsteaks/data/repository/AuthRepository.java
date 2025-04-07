@@ -13,6 +13,7 @@ import com.example.porvenirsteaks.data.model.requests.RegisterRequest;
 import com.example.porvenirsteaks.data.model.responses.LoginResponse;
 import com.example.porvenirsteaks.data.model.responses.RegisterResponse;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
+import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
 import java.util.HashMap;
@@ -149,6 +150,123 @@ public class AuthRepository {
                 // Incluso si falla la API, limpiamos el token
                 TokenManager.clearToken(context);
                 result.setValue(Resource.success(true));
+            }
+        });
+
+        return result;
+    }
+
+    public LiveData<Resource<Map<String, Object>>> reenviarCodigo(String email) {
+        MutableLiveData<Resource<Map<String, Object>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        // Verificar conexión a internet
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
+        Map<String, String> request = new HashMap<>();
+        request.put("email", email);
+
+        apiService.reenviarCodigo(request).enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    try {
+                        String errorBody = response.errorBody() != null ?
+                                response.errorBody().string() : "Error al reenviar el código";
+                        result.setValue(Resource.error(errorBody, null));
+                    } catch (Exception e) {
+                        result.setValue(Resource.error("Error al reenviar el código: " + e.getMessage(), null));
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
+    public LiveData<Resource<Map<String, Object>>> recuperarPassword(String email) {
+        MutableLiveData<Resource<Map<String, Object>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        // Verificar conexión a internet
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
+        Map<String, String> request = new HashMap<>();
+        request.put("email", email);
+
+        apiService.recuperarPassword(request).enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    try {
+                        String errorBody = response.errorBody() != null ?
+                                response.errorBody().string() : "Error al solicitar recuperación de contraseña";
+                        result.setValue(Resource.error(errorBody, null));
+                    } catch (Exception e) {
+                        result.setValue(Resource.error("Error al solicitar recuperación: " + e.getMessage(), null));
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
+    public LiveData<Resource<Map<String, Object>>> cambiarPassword(String email, String codigo, String password, String passwordConfirmation) {
+        MutableLiveData<Resource<Map<String, Object>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        // Verificar conexión a internet
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
+        Map<String, Object> request = new HashMap<>();
+        request.put("email", email);
+        request.put("codigo", codigo);
+        request.put("password", password);
+        request.put("password_confirmation", passwordConfirmation);
+
+        apiService.cambiarPassword(request).enqueue(new Callback<Map<String, Object>>() {
+            @Override
+            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    try {
+                        String errorBody = response.errorBody() != null ?
+                                response.errorBody().string() : "Error al cambiar la contraseña";
+                        result.setValue(Resource.error(errorBody, null));
+                    } catch (Exception e) {
+                        result.setValue(Resource.error("Error al cambiar contraseña: " + e.getMessage(), null));
+                    }
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
             }
         });
 
