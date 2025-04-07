@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.porvenirsteaks.databinding.FragmentNotificacionesBinding;
+import com.example.porvenirsteaks.ui.notificaciones.adapters.NotificacionesAdapter;
 import com.example.porvenirsteaks.utils.Resource;
 
 public class NotificacionesFragment extends Fragment {
