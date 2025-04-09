@@ -13,7 +13,7 @@
             android:icon="@drawable/ic_menu"
             android:title="Productos" />
         <item
-            android:id="@+id/nav_carrito"
+            android:id="@+id/carritoFragment"
             android:icon="@drawable/ic_shopping_cart"
             android:title="Carrito" />
         <item
@@ -32,5 +32,19 @@
             android:id="@+id/nav_perfil"
             android:icon="@drawable/ic_person"
             android:title="Mi Perfil" />
+    </group>
+
+    <!-- Elementos para roles específicos -->
+    <group android:id="@+id/menu_roles">
+        <item
+            android:id="@+id/nav_repartidor_entregas"
+            android:icon="@drawable/ic_orders"
+            android:title="Mis Entregas"
+            android:visible="false" />
+        <item
+            android:id="@+id/nav_admin_dashboard"
+            android:icon="@drawable/ic_home"
+            android:title="Dashboard"
+            android:visible="false" />
     </group>
 </menu>

@@ -32,7 +32,7 @@
     </fragment>
 
     <fragment
-        android:id="@+id/nav_carrito"
+        android:id="@+id/carritoFragment"
         android:name="com.example.porvenirsteaks.ui.carrito.CarritoFragment"
         android:label="Carrito"
         tools:layout="@layout/fragment_carrito" />
@@ -74,4 +74,17 @@
         android:name="com.example.porvenirsteaks.ui.perfil.PerfilFragment"
         android:label="Mi Perfil"
         tools:layout="@layout/fragment_perfil" />
+
+    <!-- Agregar estos fragmentos para roles específicos -->
+    <fragment
+        android:id="@+id/nav_repartidor_entregas"
+        android:name="com.example.porvenirsteaks.ui.repartidor.EntregasFragment"
+        android:label="Mis Entregas"
+        tools:layout="@layout/fragment_entregas" />
+
+    <fragment
+        android:id="@+id/nav_admin_dashboard"
+        android:name="com.example.porvenirsteaks.ui.admin.DashboardFragment"
+        android:label="Dashboard"
+        tools:layout="@layout/fragment_dashboard" />
 </navigation>
