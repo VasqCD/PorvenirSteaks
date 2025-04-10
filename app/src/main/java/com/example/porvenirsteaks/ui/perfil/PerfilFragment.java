@@ -5,6 +5,7 @@ import android.app.Dialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
@@ -32,12 +33,16 @@ import com.example.porvenirsteaks.databinding.DialogSolicitarRepartidorBinding;
 import com.example.porvenirsteaks.databinding.FragmentPerfilBinding;
 import com.example.porvenirsteaks.ui.auth.LoginActivity;
 import com.example.porvenirsteaks.utils.Constants;
+import com.example.porvenirsteaks.utils.DateUtils;
 import com.example.porvenirsteaks.utils.ImageUtils;
+import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.PermissionUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 import android.Manifest;
 
@@ -93,45 +98,80 @@ public class PerfilFragment extends Fragment {
     }
 
     private void checkAndRequestImagePermissions() {
-        if (PermissionUtils.checkPermissions(requireContext(), IMAGE_PERMISSIONS)) {
+        // Determinar qué permisos solicitar según la versión de Android
+        List<String> permissionsNeeded = new ArrayList<>();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // Android 13+ requiere READ_MEDIA_IMAGES
+            permissionsNeeded.add(Manifest.permission.READ_MEDIA_IMAGES);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            // Android 11-12 puede usar READ_EXTERNAL_STORAGE
+            permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+        } else {
+            // Android 10 y anteriores
+            permissionsNeeded.add(Manifest.permission.READ_EXTERNAL_STORAGE);
+            permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        }
+
+        String[] permissions = permissionsNeeded.toArray(new String[0]);
+
+        // Verificar si ya tenemos los permisos
+        boolean allPermissionsGranted = true;
+        for (String permission : permissions) {
+            if (ContextCompat.checkSelfPermission(requireContext(), permission)
+                    != PackageManager.PERMISSION_GRANTED) {
+                allPermissionsGranted = false;
+                break;
+            }
+        }
+
+        if (allPermissionsGranted) {
+            // Ya tenemos todos los permisos
             openImagePicker();
         } else {
-            if (PermissionUtils.shouldShowRequestPermissionRationale(this, IMAGE_PERMISSIONS)) {
-                // Mostrar diálogo explicando por qué se necesitan los permisos
-                PermissionUtils.showPermissionRationaleDialog(
-                        requireContext(),
-                        "Permiso necesario",
-                        "Para cambiar tu foto de perfil, necesitamos acceder a tu galería de imágenes.",
-                        (dialog, which) -> requestPermissions(IMAGE_PERMISSIONS, REQUEST_IMAGE_PERMISSION),
-                        (dialog, which) -> Toast.makeText(requireContext(), "No se puede cambiar la foto sin permiso", Toast.LENGTH_SHORT).show()
-                );
-            } else {
-                // Solicitar el permiso directamente
-                requestPermissions(IMAGE_PERMISSIONS, REQUEST_IMAGE_PERMISSION);
-            }
+            // Solicitar permisos
+            requestPermissions(permissions, REQUEST_IMAGE_PERMISSION);
         }
     }
 
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
         if (requestCode == REQUEST_IMAGE_PERMISSION) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // Permiso otorgado
+            // Verifica si TODOS los permisos fueron concedidos
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                // Todos los permisos fueron otorgados
                 openImagePicker();
             } else {
-                // Permiso denegado
-                if (!shouldShowRequestPermissionRationale(IMAGE_PERMISSIONS[0])) {
-                    // Usuario eligió "No volver a preguntar"
+                // Verifica qué permisos fueron denegados permanentemente
+                boolean somePermissionPermanentlyDenied = false;
+                for (String permission : permissions) {
+                    if (!shouldShowRequestPermissionRationale(permission)) {
+                        somePermissionPermanentlyDenied = true;
+                        break;
+                    }
+                }
+
+                if (somePermissionPermanentlyDenied) {
+                    // Usuario eligió "No volver a preguntar" para al menos un permiso
                     PermissionUtils.showPermissionDeniedDialog(
                             requireContext(),
-                            "Has denegado permanentemente el permiso de acceso a imágenes. Para cambiar tu foto de perfil, debes habilitar este permiso en la configuración de la aplicación."
+                            "Para cambiar tu foto de perfil, necesitas conceder acceso a tus imágenes. Puedes habilitarlo en la configuración de la aplicación."
                     );
                 } else {
-                    Toast.makeText(requireContext(), "Permiso denegado. No se puede cambiar la foto de perfil.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(requireContext(), "Necesitamos estos permisos para cambiar tu foto de perfil.", Toast.LENGTH_SHORT).show();
                 }
             }
         }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     private void cargarDatosPerfil() {
@@ -140,90 +180,89 @@ public class PerfilFragment extends Fragment {
         // Primero intenta cargar desde caché local
         User cachedUser = UserManager.getUser(requireContext());
         if (cachedUser != null) {
+            Log.d("PerfilFragment", "Cargando datos desde caché");
             actualizarUIConDatosUsuario(cachedUser);
         }
 
-        // Luego intenta actualizar desde el servidor
-        viewModel.getUserProfile().observe(getViewLifecycleOwner(), result -> {
-            binding.progressBar.setVisibility(View.GONE);
+        // Luego intenta actualizar desde el servidor solo si hay conexión
+        if (NetworkUtils.isNetworkAvailable(requireContext())) {
+            viewModel.getUserProfile().observe(getViewLifecycleOwner(), result -> {
+                binding.progressBar.setVisibility(View.GONE);
 
-            if (result.status == Resource.Status.SUCCESS && result.data != null) {
-                actualizarUIConDatosUsuario(result.data);
-            } else if (result.status == Resource.Status.ERROR) {
-                if (cachedUser == null) {
-                    // Solo mostrar error si no teníamos datos en caché
-                    Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
+                if (result.status == Resource.Status.SUCCESS && result.data != null) {
+                    Log.d("PerfilFragment", "Datos actualizados desde el servidor");
+                    actualizarUIConDatosUsuario(result.data);
+                } else if (result.status == Resource.Status.ERROR) {
+                    Log.e("PerfilFragment", "Error cargando datos: " + result.message);
+
+                    if (cachedUser == null) {
+                        // Solo mostrar error si no teníamos datos en caché
+                        Toast.makeText(requireContext(), "Error al cargar datos de perfil: " + result.message, Toast.LENGTH_SHORT).show();
+                    }
                 }
+            });
+        } else {
+            binding.progressBar.setVisibility(View.GONE);
+            if (cachedUser == null) {
+                // No hay caché y tampoco hay red
+                Toast.makeText(requireContext(), "No hay conexión a internet ni datos guardados", Toast.LENGTH_SHORT).show();
             }
-        });
+        }
     }
 
     private void actualizarUIConDatosUsuario(User user) {
         try {
-        // Actualizar datos básicos
-        String nombreCompleto = user.getName();
-        if (user.getApellido() != null && !user.getApellido().isEmpty()) {
-            nombreCompleto += " " + user.getApellido();
-        }
-        binding.tvNombreUsuario.setText(nombreCompleto);
-        binding.collapsingToolbar.setTitle(nombreCompleto);
-
-        // Rol de usuario
-        binding.tvRolUsuario.setText(formatearRol(user.getRol()));
-
-        // Información personal
-        binding.tvEmail.setText(user.getEmail());
-        binding.tvTelefono.setText(user.getTelefono() != null ? user.getTelefono() : "No especificado");
-
-            // Fechas
-            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-            if (user.getFechaRegistro() != null) {
-                try {
-                    // Usar un formato más flexible
-                    String dateString = user.getFechaRegistro();
-                    Date fecha;
-                    if (dateString.contains("T")) {
-                        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
-                        try {
-                            fecha = inputFormat.parse(dateString.substring(0, 19)); // Truncar milisegundos
-                        } catch (Exception e) {
-                            // Si falla, intentar con otro formato
-                            inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-                            fecha = inputFormat.parse(dateString);
-                        }
-                    } else {
-                        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-                        fecha = inputFormat.parse(dateString);
-                    }
-
-                    binding.tvFechaRegistro.setText(outputFormat.format(fecha));
-                } catch (Exception e) {
-                    binding.tvFechaRegistro.setText(user.getFechaRegistro());
-                }
-            } else {
-                binding.tvFechaRegistro.setText("No disponible");
+            if (user == null) {
+                Log.e("PerfilFragment", "Usuario nulo en actualizarUIConDatosUsuario");
+                return;
             }
 
-        // Foto de perfil
-        try {
+            Log.d("PerfilFragment", "Actualizando UI con datos: " + user.getName() + ", " + user.getEmail());
+
+            // Actualizar datos básicos
+            String nombreCompleto = user.getName();
+            if (user.getApellido() != null && !user.getApellido().isEmpty()) {
+                nombreCompleto += " " + user.getApellido();
+            }
+            binding.tvNombreUsuario.setText(nombreCompleto);
+            binding.collapsingToolbar.setTitle(nombreCompleto);
+
+            // Rol de usuario
+            binding.tvRolUsuario.setText(formatearRol(user.getRol()));
+
+            // Información personal
+            binding.tvEmail.setText(user.getEmail());
+            binding.tvTelefono.setText(user.getTelefono() != null ? user.getTelefono() : "No especificado");
+
+            // Fechas usando nuestra nueva utilidad
+            binding.tvFechaRegistro.setText(
+                    user.getFechaRegistro() != null ?
+                            DateUtils.formatDateString(user.getFechaRegistro(), "dd/MM/yyyy") :
+                            "No disponible"
+            );
+
+            binding.tvUltimaConexion.setText(
+                    user.getUltimaConexion() != null ?
+                            DateUtils.formatDateString(user.getUltimaConexion(), "dd/MM/yyyy") :
+                            "No disponible"
+            );
+
+            // Foto de perfil
             if (user.getFotoPerfil() != null && !user.getFotoPerfil().isEmpty()) {
+                Log.d("PerfilFragment", "Cargando foto de perfil: " + user.getFotoPerfil());
                 ImageUtils.loadUserPhoto(binding.ivProfilePic, user.getFotoPerfil());
             }
-        } catch (Exception e) {
-            Log.e("PerfilFragment", "Error al cargar foto de perfil", e);
-        }
 
-        // Mostrar/ocultar botón de solicitar ser repartidor si es cliente
-        if (Constants.ROL_CLIENTE.equals(user.getRol())) {
-            binding.btnSolicitarSerRepartidor.setVisibility(View.VISIBLE);
-        } else {
-            binding.btnSolicitarSerRepartidor.setVisibility(View.GONE);
-        }
+            // Mostrar/ocultar botón de solicitar ser repartidor si es cliente
+            if (Constants.ROL_CLIENTE.equals(user.getRol())) {
+                binding.btnSolicitarSerRepartidor.setVisibility(View.VISIBLE);
+            } else {
+                binding.btnSolicitarSerRepartidor.setVisibility(View.GONE);
+            }
 
+            Log.d("PerfilFragment", "UI actualizada correctamente");
         } catch (Exception e) {
-            Log.e("PerfilFragment", "Error al actualizar UI", e);
-            // Mostrar mensaje de error al usuario
-            Toast.makeText(requireContext(), "Error al cargar datos del perfil", Toast.LENGTH_SHORT).show();
+            Log.e("PerfilFragment", "Error actualizando UI del perfil: " + e.getMessage(), e);
         }
     }
 
