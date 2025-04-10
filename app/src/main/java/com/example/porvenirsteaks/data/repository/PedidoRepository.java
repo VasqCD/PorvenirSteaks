@@ -25,6 +25,8 @@ import retrofit2.Response;
 
 public class PedidoRepository {
     private ApiService apiService;
+    private Context context;
+    private static final String TAG = "PedidoRepository";
 
     public PedidoRepository(Context context) {
         apiService = RetrofitClient.getClient(TokenManager.getToken(context))
