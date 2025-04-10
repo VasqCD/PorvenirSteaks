@@ -13,6 +13,7 @@ public class Resource<T> {
 
     @Nullable
     public final String message;
+    public String email;
 
     private Resource(@NonNull Status status, @Nullable T data, @Nullable String message) {
         this.status = status;
@@ -32,9 +33,16 @@ public class Resource<T> {
         return new Resource<>(Status.LOADING, data, null);
     }
 
+    public static <T> Resource<T> verificationRequired(String msg, String email) {
+        Resource<T> resource = new Resource<>(Status.VERIFICATION_REQUIRED, null, msg);
+        resource.email = email;
+        return resource;
+    }
+
     public enum Status {
         SUCCESS,
         ERROR,
-        LOADING
+        LOADING,
+        VERIFICATION_REQUIRED
     }
 }

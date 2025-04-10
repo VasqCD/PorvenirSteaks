@@ -100,7 +100,13 @@ public class LoginActivity extends AppCompatActivity {
 
                 // Ir a MainActivity
                 goToMainActivity();
+            } else if (result.status == Resource.Status.VERIFICATION_REQUIRED) {
+                Toast.makeText(this, result.message, Toast.LENGTH_LONG).show();
 
+                // Redirigir a la pantalla de verificación
+                Intent intent = new Intent(this, VerifyCodeActivity.class);
+                intent.putExtra("email", result.email);
+                startActivity(intent);
             } else if (result.status == Resource.Status.ERROR) {
                 Toast.makeText(this, result.message, Toast.LENGTH_LONG).show();
             }

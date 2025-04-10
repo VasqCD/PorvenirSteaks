@@ -16,6 +16,8 @@ import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,7 +45,23 @@ public class AuthRepository {
                 if (response.isSuccessful() && response.body() != null) {
                     loginResult.setValue(Resource.success(response.body()));
                 } else {
-                    loginResult.setValue(Resource.error("Credenciales incorrectas", null));
+                    try {
+                        if (response.code() == 403) {
+                            // Intentar extraer el JSON de error
+                            JSONObject errorBody = new JSONObject(response.errorBody().string());
+                            if (errorBody.has("verification_required") && errorBody.getBoolean("verification_required")) {
+                                // Crear un error especial para verificación requerida
+                                loginResult.setValue(Resource.verificationRequired(
+                                        errorBody.getString("message"),
+                                        errorBody.getString("email")
+                                ));
+                                return;
+                            }
+                        }
+                        loginResult.setValue(Resource.error("Credenciales incorrectas", null));
+                    } catch (Exception e) {
+                        loginResult.setValue(Resource.error("Error al procesar la respuesta", null));
+                    }
                 }
             }
 
