@@ -12,6 +12,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.porvenirsteaks.api.ApiService;
 import com.example.porvenirsteaks.api.RetrofitClient;
 import com.example.porvenirsteaks.data.model.User;
+import com.example.porvenirsteaks.data.model.responses.UserResponse;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.data.preferences.UserManager;
 import com.example.porvenirsteaks.utils.ImageUtils;
@@ -58,14 +59,34 @@ public class PerfilViewModel extends AndroidViewModel {
             return result;
         }
 
-        apiService.getUserProfile().enqueue(new Callback<User>() {
+        apiService.getUserProfile().enqueue(new Callback<UserResponse>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    User user = response.body();
-                    // Guardar en preferencias locales
-                    UserManager.saveUser(getApplication(), user);
-                    result.setValue(Resource.success(user));
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getUser() != null) {
+                    User user = response.body().getUser();
+
+                    // Log para depuración
+                    Log.d("PerfilViewModel", "Respuesta del servidor: ID=" + user.getId() +
+                            ", Nombre=" + user.getName() +
+                            ", Email=" + user.getEmail() +
+                            ", Rol=" + user.getRol());
+
+                    // IMPORTANTE: Verificar que el usuario tenga los datos correctos
+                    if (user.getId() > 0) {
+                        // Guardar en preferencias locales
+                        UserManager.saveUser(getApplication(), user);
+                        result.setValue(Resource.success(user));
+                    } else {
+                        Log.e("PerfilViewModel", "Usuario recibido del servidor con ID inválido: " + user.getId());
+
+                        // Intentar recuperar de caché si hay problema con la respuesta
+                        User cachedUser = UserManager.getUser(getApplication());
+                        if (cachedUser != null && cachedUser.getId() > 0) {
+                            result.setValue(Resource.success(cachedUser));
+                        } else {
+                            result.setValue(Resource.error("Datos de usuario incorrectos", null));
+                        }
+                    }
                 } else {
                     try {
                         if (response.errorBody() != null) {
@@ -81,8 +102,8 @@ public class PerfilViewModel extends AndroidViewModel {
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
-                Log.e(TAG, "Error al obtener perfil", t);
+            public void onFailure(Call<UserResponse> call, Throwable t) {
+                Log.e("PerfilViewModel", "Error al obtener perfil", t);
                 result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
             }
         });
