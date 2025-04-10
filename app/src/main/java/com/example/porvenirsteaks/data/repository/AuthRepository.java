@@ -1,6 +1,7 @@
 package com.example.porvenirsteaks.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -16,6 +17,7 @@ import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -46,9 +48,19 @@ public class AuthRepository {
                     loginResult.setValue(Resource.success(response.body()));
                 } else {
                     try {
+                        // Verificar si la respuesta es HTML
+                        String contentType = response.headers().get("Content-Type");
+                        if (contentType != null && contentType.contains("text/html")) {
+                            Log.e("AuthRepository", "El servidor devolvió HTML en lugar de JSON. Verifique la URL y la configuración del servidor.");
+                            loginResult.setValue(Resource.error("Error de servidor: Formato de respuesta incorrecto", null));
+                            return;
+                        }
+
                         if (response.code() == 403) {
                             // Intentar extraer el JSON de error
-                            JSONObject errorBody = new JSONObject(response.errorBody().string());
+                            String errorString = response.errorBody().string();
+                            Log.d("AuthRepository", "Error 403: " + errorString);
+                            JSONObject errorBody = new JSONObject(errorString);
                             if (errorBody.has("verification_required") && errorBody.getBoolean("verification_required")) {
                                 // Crear un error especial para verificación requerida
                                 loginResult.setValue(Resource.verificationRequired(
@@ -58,9 +70,27 @@ public class AuthRepository {
                                 return;
                             }
                         }
-                        loginResult.setValue(Resource.error("Credenciales incorrectas", null));
+
+                        // Para otros casos de error, mostrar el mensaje adecuado
+                        if (response.errorBody() != null) {
+                            String errorString = response.errorBody().string();
+                            Log.d("AuthRepository", "Error body: " + errorString);
+                            try {
+                                JSONObject errorBody = new JSONObject(errorString);
+                                if (errorBody.has("message")) {
+                                    loginResult.setValue(Resource.error(errorBody.getString("message"), null));
+                                } else {
+                                    loginResult.setValue(Resource.error("Credenciales incorrectas", null));
+                                }
+                            } catch (Exception e) {
+                                loginResult.setValue(Resource.error("Credenciales incorrectas", null));
+                            }
+                        } else {
+                            loginResult.setValue(Resource.error("Error de conexión", null));
+                        }
                     } catch (Exception e) {
-                        loginResult.setValue(Resource.error("Error al procesar la respuesta", null));
+                        Log.e("AuthRepository", "Error al procesar respuesta: " + e.getMessage(), e);
+                        loginResult.setValue(Resource.error("Error al procesar la respuesta: " + e.getMessage(), null));
                     }
                 }
             }
