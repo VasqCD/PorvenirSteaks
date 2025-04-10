@@ -90,7 +90,6 @@ public class MainActivity extends AppCompatActivity {
         // Mostrar/ocultar opciones según el rol del usuario
         String userRole = UserManager.getUserRole(this);
 
-        // Por ejemplo, si hay elementos específicos para repartidores
         if (menu.findItem(R.id.nav_repartidor_entregas) != null) {
             menu.findItem(R.id.nav_repartidor_entregas).setVisible(
                     userRole.equals("repartidor"));
