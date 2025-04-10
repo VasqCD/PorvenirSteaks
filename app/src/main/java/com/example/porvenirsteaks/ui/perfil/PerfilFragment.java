@@ -185,6 +185,7 @@ public class PerfilFragment extends Fragment {
     private void uploadProfileImage(Uri imageUri) {
         binding.progressBar.setVisibility(View.VISIBLE);
 
+        // Usar el método en el ViewModel
         viewModel.uploadProfileImage(imageUri).observe(getViewLifecycleOwner(), result -> {
             binding.progressBar.setVisibility(View.GONE);
 
@@ -402,8 +403,7 @@ public class PerfilFragment extends Fragment {
         viewModel.logout().observe(getViewLifecycleOwner(), result -> {
             binding.progressBar.setVisibility(View.GONE);
 
-            // Independientemente del resultado, limpiar datos locales y dirigir al login
-            // Esto es similar a lo que haría MainActivity
+            // Independientemente del resultado, dirigir al login
             Intent intent = new Intent(requireContext(), LoginActivity.class);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
