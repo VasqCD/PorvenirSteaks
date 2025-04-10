@@ -123,4 +123,53 @@ public class PedidoRepository {
 
         return result;
     }
+
+    public LiveData<Resource<List<Pedido>>> getPedidosPendientes() {
+        MutableLiveData<Resource<List<Pedido>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        apiService.getPedidosPendientes().enqueue(new Callback<List<Pedido>>() {
+            @Override
+            public void onResponse(Call<List<Pedido>> call, Response<List<Pedido>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    result.setValue(Resource.error("Error al obtener pedidos pendientes", null));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Pedido>> call, Throwable t) {
+                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
+    public LiveData<Resource<Pedido>> actualizarEstadoPedido(int pedidoId, String nuevoEstado) {
+        MutableLiveData<Resource<Pedido>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        Map<String, String> request = new HashMap<>();
+        request.put("estado", nuevoEstado);
+
+        apiService.actualizarEstadoPedido(pedidoId, request).enqueue(new Callback<Pedido>() {
+            @Override
+            public void onResponse(Call<Pedido> call, Response<Pedido> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    result.setValue(Resource.error("Error al actualizar estado", null));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Pedido> call, Throwable t) {
+                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
 }
