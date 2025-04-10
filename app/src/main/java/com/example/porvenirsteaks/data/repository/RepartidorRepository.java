@@ -1,6 +1,7 @@
 package com.example.porvenirsteaks.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -9,9 +10,11 @@ import com.example.porvenirsteaks.api.ApiService;
 import com.example.porvenirsteaks.api.RetrofitClient;
 import com.example.porvenirsteaks.data.model.Repartidor;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
+import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import retrofit2.Call;
@@ -19,18 +22,96 @@ import retrofit2.Callback;
 import retrofit2.Response;
 
 public class RepartidorRepository {
-    private ApiService apiService;
     private Context context;
+    private ApiService apiService;
+    private static final String TAG = "RepartidorRepository";
 
     public RepartidorRepository(Context context) {
         this.context = context;
-        apiService = RetrofitClient.getClient(TokenManager.getToken(context))
-                .create(ApiService.class);
+        String token = TokenManager.getToken(context);
+        this.apiService = RetrofitClient.getClient(token).create(ApiService.class);
     }
 
-    public LiveData<Resource<Boolean>> actualizarUbicacion(double latitud, double longitud) {
-        MutableLiveData<Resource<Boolean>> result = new MutableLiveData<>();
+    /**
+     * Obtiene la lista de repartidores
+     */
+    public LiveData<Resource<List<Repartidor>>> getRepartidores() {
+        MutableLiveData<Resource<List<Repartidor>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
+
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
+        apiService.getRepartidores().enqueue(new Callback<List<Repartidor>>() {
+            @Override
+            public void onResponse(Call<List<Repartidor>> call, Response<List<Repartidor>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    result.setValue(Resource.error("Error: " + response.message(), null));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Repartidor>> call, Throwable t) {
+                Log.e(TAG, "Error al obtener repartidores", t);
+                result.setValue(Resource.error("Error: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
+    /**
+     * Obtiene los repartidores disponibles para asignación
+     */
+    public LiveData<Resource<List<Repartidor>>> getRepartidoresDisponibles() {
+        MutableLiveData<Resource<List<Repartidor>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
+        // Este endpoint debe ser creado en el backend
+        // Por ahora, filtraremos los repartidores disponibles desde el cliente
+        apiService.getRepartidores().enqueue(new Callback<List<Repartidor>>() {
+            @Override
+            public void onResponse(Call<List<Repartidor>> call, Response<List<Repartidor>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    // Filtrar solo los disponibles
+                    List<Repartidor> repartidores = response.body();
+                    repartidores.removeIf(repartidor -> !repartidor.isDisponible());
+                    result.setValue(Resource.success(repartidores));
+                } else {
+                    result.setValue(Resource.error("Error: " + response.message(), null));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Repartidor>> call, Throwable t) {
+                Log.e(TAG, "Error al obtener repartidores disponibles", t);
+                result.setValue(Resource.error("Error: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
+    /**
+     * Actualiza la ubicación del repartidor
+     */
+    public LiveData<Resource<Map<String, Object>>> actualizarUbicacion(double latitud, double longitud) {
+        MutableLiveData<Resource<Map<String, Object>>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
 
         Map<String, Double> request = new HashMap<>();
         request.put("latitud", latitud);
@@ -39,25 +120,34 @@ public class RepartidorRepository {
         apiService.actualizarUbicacionRepartidor(request).enqueue(new Callback<Map<String, Object>>() {
             @Override
             public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
-                if (response.isSuccessful()) {
-                    result.setValue(Resource.success(true));
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
                 } else {
-                    result.setValue(Resource.error("Error al actualizar ubicación", false));
+                    result.setValue(Resource.error("Error: " + response.message(), null));
                 }
             }
 
             @Override
             public void onFailure(Call<Map<String, Object>> call, Throwable t) {
-                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), false));
+                Log.e(TAG, "Error al actualizar ubicación", t);
+                result.setValue(Resource.error("Error: " + t.getMessage(), null));
             }
         });
 
         return result;
     }
 
-    public LiveData<Resource<Boolean>> cambiarDisponibilidad(boolean disponible) {
-        MutableLiveData<Resource<Boolean>> result = new MutableLiveData<>();
+    /**
+     * Actualiza la disponibilidad del repartidor
+     */
+    public LiveData<Resource<Map<String, Object>>> cambiarDisponibilidad(boolean disponible) {
+        MutableLiveData<Resource<Map<String, Object>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
+
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
 
         Map<String, Boolean> request = new HashMap<>();
         request.put("disponible", disponible);
@@ -65,16 +155,17 @@ public class RepartidorRepository {
         apiService.cambiarDisponibilidadRepartidor(request).enqueue(new Callback<Map<String, Object>>() {
             @Override
             public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
-                if (response.isSuccessful()) {
-                    result.setValue(Resource.success(true));
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
                 } else {
-                    result.setValue(Resource.error("Error al cambiar disponibilidad", false));
+                    result.setValue(Resource.error("Error: " + response.message(), null));
                 }
             }
 
             @Override
             public void onFailure(Call<Map<String, Object>> call, Throwable t) {
-                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), false));
+                Log.e(TAG, "Error al cambiar disponibilidad", t);
+                result.setValue(Resource.error("Error: " + t.getMessage(), null));
             }
         });
 
