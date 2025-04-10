@@ -5,6 +5,7 @@ import com.example.porvenirsteaks.data.model.DetallePedido;
 import com.example.porvenirsteaks.data.model.Notificacion;
 import com.example.porvenirsteaks.data.model.Pedido;
 import com.example.porvenirsteaks.data.model.Producto;
+import com.example.porvenirsteaks.data.model.Repartidor;
 import com.example.porvenirsteaks.data.model.Ubicacion;
 import com.example.porvenirsteaks.data.model.User;
 import com.example.porvenirsteaks.data.model.requests.LoginRequest;
@@ -140,4 +141,10 @@ public interface ApiService {
 
     @POST("repartidor/disponibilidad")
     Call<Map<String, Object>> cambiarDisponibilidadRepartidor(@Body Map<String, Boolean> request);
+
+    @GET("repartidores")
+    Call<List<Repartidor>> getRepartidores();
+
+    @POST("pedidos/{id}/asignar-repartidor")
+    Call<Pedido> asignarRepartidor(@Path("id") int pedidoId, @Body Map<String, Integer> request);
 }
