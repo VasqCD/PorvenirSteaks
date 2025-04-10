@@ -14,6 +14,8 @@ import com.example.porvenirsteaks.api.RetrofitClient;
 import com.example.porvenirsteaks.data.model.User;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.data.preferences.UserManager;
+import com.example.porvenirsteaks.utils.ImageUtils;
+import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
 import java.io.File;
@@ -44,6 +46,18 @@ public class PerfilViewModel extends AndroidViewModel {
         MutableLiveData<Resource<User>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
+        // Verificar conexión a internet
+        if (!NetworkUtils.isNetworkAvailable(getApplication())) {
+            // Cargar datos desde caché
+            User cachedUser = UserManager.getUser(getApplication());
+            if (cachedUser != null) {
+                result.setValue(Resource.success(cachedUser));
+            } else {
+                result.setValue(Resource.error("No hay conexión a internet", null));
+            }
+            return result;
+        }
+
         apiService.getUserProfile().enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
@@ -53,7 +67,16 @@ public class PerfilViewModel extends AndroidViewModel {
                     UserManager.saveUser(getApplication(), user);
                     result.setValue(Resource.success(user));
                 } else {
-                    result.setValue(Resource.error("Error al obtener el perfil", null));
+                    try {
+                        if (response.errorBody() != null) {
+                            String errorMsg = response.errorBody().string();
+                            result.setValue(Resource.error(errorMsg, null));
+                        } else {
+                            result.setValue(Resource.error("Error al obtener el perfil", null));
+                        }
+                    } catch (Exception e) {
+                        result.setValue(Resource.error("Error al procesar la respuesta", null));
+                    }
                 }
             }
 
@@ -150,14 +173,24 @@ public class PerfilViewModel extends AndroidViewModel {
         result.setValue(Resource.loading(null));
 
         try {
-            // Convertir Uri a File
-            File file = new File(getRealPathFromURI(imageUri));
+            // Check if network is available
+            if (!NetworkUtils.isNetworkAvailable(getApplication())) {
+                result.setValue(Resource.error("No hay conexión a internet", null));
+                return result;
+            }
+
+            // Comprimir la imagen
+            File compressedFile = ImageUtils.compressImage(getApplication(), imageUri);
+            if (compressedFile == null) {
+                result.setValue(Resource.error("Error al procesar la imagen", null));
+                return result;
+            }
 
             // Crear RequestBody y MultipartBody.Part
-            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), file);
-            MultipartBody.Part imagePart = MultipartBody.Part.createFormData("foto_perfil", file.getName(), requestFile);
+            RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), compressedFile);
+            MultipartBody.Part imagePart = MultipartBody.Part.createFormData("foto_perfil", compressedFile.getName(), requestFile);
 
-            // Suponiendo que tienes este endpoint en ApiService
+            // Enviar la imagen al servidor
             apiService.uploadProfileImage(imagePart).enqueue(new Callback<User>() {
                 @Override
                 public void onResponse(Call<User> call, Response<User> response) {
@@ -167,7 +200,16 @@ public class PerfilViewModel extends AndroidViewModel {
                         UserManager.saveUser(getApplication(), user);
                         result.setValue(Resource.success(user));
                     } else {
-                        result.setValue(Resource.error("Error al subir la imagen", null));
+                        try {
+                            if (response.errorBody() != null) {
+                                String errorMsg = response.errorBody().string();
+                                result.setValue(Resource.error(errorMsg, null));
+                            } else {
+                                result.setValue(Resource.error("Error al subir la imagen", null));
+                            }
+                        } catch (Exception e) {
+                            result.setValue(Resource.error("Error al procesar la respuesta", null));
+                        }
                     }
                 }
 
@@ -251,10 +293,7 @@ public class PerfilViewModel extends AndroidViewModel {
      * Método auxiliar para obtener la ruta real de un Uri
      */
     private String getRealPathFromURI(Uri uri) {
-        // Aquí deberías implementar la lógica para convertir un Uri a una ruta real
-        // Esta implementación podría variar según la versión de Android y el tipo de Uri
 
-        // Implementación simplificada para este ejemplo:
         String[] filePathColumn = {android.provider.MediaStore.Images.Media.DATA};
         android.database.Cursor cursor = getApplication().getContentResolver().query(uri, filePathColumn, null, null, null);
         if (cursor == null)
@@ -262,6 +301,10 @@ public class PerfilViewModel extends AndroidViewModel {
 
         cursor.moveToFirst();
         int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+        if (columnIndex < 0) {
+            cursor.close();
+            return uri.getPath();
+        }
         String filePath = cursor.getString(columnIndex);
         cursor.close();
 
