@@ -80,7 +80,21 @@
         android:id="@+id/nav_repartidor_entregas"
         android:name="com.example.porvenirsteaks.ui.repartidor.EntregasFragment"
         android:label="Mis Entregas"
-        tools:layout="@layout/fragment_entregas" />
+        tools:layout="@layout/fragment_entregas">
+        <action
+            android:id="@+id/action_nav_repartidor_entregas_to_detalleEntregaFragment"
+            app:destination="@id/detalleEntregaFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/detalleEntregaFragment"
+        android:name="com.example.porvenirsteaks.ui.repartidor.DetalleEntregaFragment"
+        android:label="Detalle de Entrega"
+        tools:layout="@layout/fragment_detalle_entrega">
+        <argument
+            android:name="pedido_id"
+            app:argType="integer" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_admin_dashboard"
