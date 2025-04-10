@@ -194,30 +194,26 @@ public class PerfilViewModel extends AndroidViewModel {
         result.setValue(Resource.loading(null));
 
         try {
-            // Check if network is available
             if (!NetworkUtils.isNetworkAvailable(getApplication())) {
                 result.setValue(Resource.error("No hay conexión a internet", null));
                 return result;
             }
 
-            // Comprimir la imagen
             File compressedFile = ImageUtils.compressImage(getApplication(), imageUri);
             if (compressedFile == null) {
                 result.setValue(Resource.error("Error al procesar la imagen", null));
                 return result;
             }
 
-            // Crear RequestBody y MultipartBody.Part
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), compressedFile);
             MultipartBody.Part imagePart = MultipartBody.Part.createFormData("foto_perfil", compressedFile.getName(), requestFile);
 
-            // Enviar la imagen al servidor
-            apiService.uploadProfileImage(imagePart).enqueue(new Callback<User>() {
+            // Ahora se usa Call<UserResponse>
+            apiService.uploadProfileImage(imagePart).enqueue(new Callback<UserResponse>() {
                 @Override
-                public void onResponse(Call<User> call, Response<User> response) {
-                    if (response.isSuccessful() && response.body() != null) {
-                        User user = response.body();
-                        // Guardar en preferencias locales
+                public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                    if (response.isSuccessful() && response.body() != null && response.body().getUser() != null) {
+                        User user = response.body().getUser();
                         UserManager.saveUser(getApplication(), user);
                         result.setValue(Resource.success(user));
                     } else {
@@ -235,7 +231,7 @@ public class PerfilViewModel extends AndroidViewModel {
                 }
 
                 @Override
-                public void onFailure(Call<User> call, Throwable t) {
+                public void onFailure(Call<UserResponse> call, Throwable t) {
                     Log.e(TAG, "Error al subir imagen", t);
                     result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
                 }
@@ -247,6 +243,7 @@ public class PerfilViewModel extends AndroidViewModel {
 
         return result;
     }
+
 
     /**
      * Envía solicitud para ser repartidor
