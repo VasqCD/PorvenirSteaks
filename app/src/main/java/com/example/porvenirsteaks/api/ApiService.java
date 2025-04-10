@@ -14,6 +14,7 @@ import com.example.porvenirsteaks.data.model.requests.RegisterRequest;
 import com.example.porvenirsteaks.data.model.requests.UbicacionRequest;
 import com.example.porvenirsteaks.data.model.responses.LoginResponse;
 import com.example.porvenirsteaks.data.model.responses.RegisterResponse;
+import com.example.porvenirsteaks.data.model.responses.UserResponse;
 
 import java.util.List;
 import java.util.Map;
@@ -50,8 +51,9 @@ public interface ApiService {
     @POST("cambiar-password")
     Call<Map<String, Object>> cambiarPassword(@Body Map<String, Object> request);
 
+
     @GET("user")
-    Call<User> getUserProfile();
+    Call<UserResponse> getUserProfile();
 
     @POST("user/update")
     Call<User> updateProfile(@Body Map<String, Object> request);
