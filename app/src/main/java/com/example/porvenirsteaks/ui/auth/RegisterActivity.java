@@ -12,6 +12,7 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.example.porvenirsteaks.databinding.ActivityRegisterBinding;
 import com.example.porvenirsteaks.utils.Resource;
+import com.example.porvenirsteaks.utils.ToastUtils;
 
 public class RegisterActivity extends AppCompatActivity {
     private ActivityRegisterBinding binding;
@@ -122,7 +123,8 @@ public class RegisterActivity extends AppCompatActivity {
             binding.btnRegister.setEnabled(true);
 
             if (result.status == Resource.Status.SUCCESS && result.data != null) {
-                Toast.makeText(this, "Registro exitoso. Verifica tu correo.", Toast.LENGTH_LONG).show();
+                //Toast.makeText(this, "Registro exitoso. Verifica tu correo.", Toast.LENGTH_LONG).show();
+                ToastUtils.showSuccessToast(this, "Registro exitoso. Verifica tu correo.");
 
                 // Ir a la pantalla de verificación
                 Intent intent = new Intent(this, VerifyCodeActivity.class);
