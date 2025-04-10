@@ -130,4 +130,14 @@ public interface ApiService {
     // FCM Endpoints
     @POST("fcm/register")
     Call<Map<String, Object>> registerFcmToken(@Body Map<String, String> request);
+
+    // Repartidor Endpoints
+    @GET("pedidos/pendientes")
+    Call<List<Pedido>> getPedidosPendientes();
+
+    @POST("repartidor/ubicacion")
+    Call<Map<String, Object>> actualizarUbicacionRepartidor(@Body Map<String, Double> request);
+
+    @POST("repartidor/disponibilidad")
+    Call<Map<String, Object>> cambiarDisponibilidadRepartidor(@Body Map<String, Boolean> request);
 }
