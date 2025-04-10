@@ -3,10 +3,12 @@ package com.example.porvenirsteaks.ui.perfil;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,6 +19,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
@@ -30,17 +33,25 @@ import com.example.porvenirsteaks.databinding.FragmentPerfilBinding;
 import com.example.porvenirsteaks.ui.auth.LoginActivity;
 import com.example.porvenirsteaks.utils.Constants;
 import com.example.porvenirsteaks.utils.ImageUtils;
+import com.example.porvenirsteaks.utils.PermissionUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import android.Manifest;
 
 public class PerfilFragment extends Fragment {
     private FragmentPerfilBinding binding;
     private PerfilViewModel viewModel;
     private static final int PICK_IMAGE_REQUEST = 1;
     private Uri imageUri;
+    private static final int STORAGE_PERMISSION_REQUEST = 1001;
+    private static final int REQUEST_IMAGE_PERMISSION = 101;
+    private static final String[] IMAGE_PERMISSIONS = new String[] {
+            Manifest.permission.READ_EXTERNAL_STORAGE,
+            Manifest.permission.READ_MEDIA_IMAGES
+    };
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -60,7 +71,7 @@ public class PerfilFragment extends Fragment {
     private void setupUI() {
         // Configurar botón editar foto
         binding.fabEditFoto.setOnClickListener(v -> {
-            openImagePicker();
+            checkAndRequestImagePermissions();
         });
 
         // Configurar botones de acciones
@@ -81,26 +92,74 @@ public class PerfilFragment extends Fragment {
         });
     }
 
+    private void checkAndRequestImagePermissions() {
+        if (PermissionUtils.checkPermissions(requireContext(), IMAGE_PERMISSIONS)) {
+            openImagePicker();
+        } else {
+            if (PermissionUtils.shouldShowRequestPermissionRationale(this, IMAGE_PERMISSIONS)) {
+                // Mostrar diálogo explicando por qué se necesitan los permisos
+                PermissionUtils.showPermissionRationaleDialog(
+                        requireContext(),
+                        "Permiso necesario",
+                        "Para cambiar tu foto de perfil, necesitamos acceder a tu galería de imágenes.",
+                        (dialog, which) -> requestPermissions(IMAGE_PERMISSIONS, REQUEST_IMAGE_PERMISSION),
+                        (dialog, which) -> Toast.makeText(requireContext(), "No se puede cambiar la foto sin permiso", Toast.LENGTH_SHORT).show()
+                );
+            } else {
+                // Solicitar el permiso directamente
+                requestPermissions(IMAGE_PERMISSIONS, REQUEST_IMAGE_PERMISSION);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == REQUEST_IMAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permiso otorgado
+                openImagePicker();
+            } else {
+                // Permiso denegado
+                if (!shouldShowRequestPermissionRationale(IMAGE_PERMISSIONS[0])) {
+                    // Usuario eligió "No volver a preguntar"
+                    PermissionUtils.showPermissionDeniedDialog(
+                            requireContext(),
+                            "Has denegado permanentemente el permiso de acceso a imágenes. Para cambiar tu foto de perfil, debes habilitar este permiso en la configuración de la aplicación."
+                    );
+                } else {
+                    Toast.makeText(requireContext(), "Permiso denegado. No se puede cambiar la foto de perfil.", Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
     private void cargarDatosPerfil() {
         binding.progressBar.setVisibility(View.VISIBLE);
 
+        // Primero intenta cargar desde caché local
+        User cachedUser = UserManager.getUser(requireContext());
+        if (cachedUser != null) {
+            actualizarUIConDatosUsuario(cachedUser);
+        }
+
+        // Luego intenta actualizar desde el servidor
         viewModel.getUserProfile().observe(getViewLifecycleOwner(), result -> {
             binding.progressBar.setVisibility(View.GONE);
 
             if (result.status == Resource.Status.SUCCESS && result.data != null) {
                 actualizarUIConDatosUsuario(result.data);
             } else if (result.status == Resource.Status.ERROR) {
-                Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
-                // Intentar cargar desde la caché local
-                User cachedUser = UserManager.getUser(requireContext());
-                if (cachedUser != null) {
-                    actualizarUIConDatosUsuario(cachedUser);
+                if (cachedUser == null) {
+                    // Solo mostrar error si no teníamos datos en caché
+                    Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
                 }
             }
         });
     }
 
     private void actualizarUIConDatosUsuario(User user) {
+        try {
         // Actualizar datos básicos
         String nombreCompleto = user.getName();
         if (user.getApellido() != null && !user.getApellido().isEmpty()) {
@@ -116,35 +175,42 @@ public class PerfilFragment extends Fragment {
         binding.tvEmail.setText(user.getEmail());
         binding.tvTelefono.setText(user.getTelefono() != null ? user.getTelefono() : "No especificado");
 
-        // Fechas
-        SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-        if (user.getFechaRegistro() != null) {
-            try {
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.US);
-                Date fecha = inputFormat.parse(user.getFechaRegistro());
-                binding.tvFechaRegistro.setText(outputFormat.format(fecha));
-            } catch (Exception e) {
-                binding.tvFechaRegistro.setText(user.getFechaRegistro());
-            }
-        } else {
-            binding.tvFechaRegistro.setText("No disponible");
-        }
+            // Fechas
+            SimpleDateFormat outputFormat = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            if (user.getFechaRegistro() != null) {
+                try {
+                    // Usar un formato más flexible
+                    String dateString = user.getFechaRegistro();
+                    Date fecha;
+                    if (dateString.contains("T")) {
+                        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US);
+                        try {
+                            fecha = inputFormat.parse(dateString.substring(0, 19)); // Truncar milisegundos
+                        } catch (Exception e) {
+                            // Si falla, intentar con otro formato
+                            inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                            fecha = inputFormat.parse(dateString);
+                        }
+                    } else {
+                        SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                        fecha = inputFormat.parse(dateString);
+                    }
 
-        if (user.getUltimaConexion() != null) {
-            try {
-                SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS'Z'", Locale.US);
-                Date fecha = inputFormat.parse(user.getUltimaConexion());
-                binding.tvUltimaConexion.setText(outputFormat.format(fecha));
-            } catch (Exception e) {
-                binding.tvUltimaConexion.setText(user.getUltimaConexion());
+                    binding.tvFechaRegistro.setText(outputFormat.format(fecha));
+                } catch (Exception e) {
+                    binding.tvFechaRegistro.setText(user.getFechaRegistro());
+                }
+            } else {
+                binding.tvFechaRegistro.setText("No disponible");
             }
-        } else {
-            binding.tvUltimaConexion.setText("No disponible");
-        }
 
         // Foto de perfil
-        if (user.getFotoPerfil() != null && !user.getFotoPerfil().isEmpty()) {
-            ImageUtils.loadUserPhoto(binding.ivProfilePic, user.getFotoPerfil());
+        try {
+            if (user.getFotoPerfil() != null && !user.getFotoPerfil().isEmpty()) {
+                ImageUtils.loadUserPhoto(binding.ivProfilePic, user.getFotoPerfil());
+            }
+        } catch (Exception e) {
+            Log.e("PerfilFragment", "Error al cargar foto de perfil", e);
         }
 
         // Mostrar/ocultar botón de solicitar ser repartidor si es cliente
@@ -152,6 +218,12 @@ public class PerfilFragment extends Fragment {
             binding.btnSolicitarSerRepartidor.setVisibility(View.VISIBLE);
         } else {
             binding.btnSolicitarSerRepartidor.setVisibility(View.GONE);
+        }
+
+        } catch (Exception e) {
+            Log.e("PerfilFragment", "Error al actualizar UI", e);
+            // Mostrar mensaje de error al usuario
+            Toast.makeText(requireContext(), "Error al cargar datos del perfil", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -169,6 +241,15 @@ public class PerfilFragment extends Fragment {
     }
 
     private void openImagePicker() {
+        // Verificar permisos primero
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            // Solicitar permisos
+            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                    STORAGE_PERMISSION_REQUEST);
+            return;
+        }
+
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
@@ -196,6 +277,17 @@ public class PerfilFragment extends Fragment {
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadUserImage(String photoUrl) {
+        try {
+            if (photoUrl != null && !photoUrl.isEmpty()) {
+                ImageUtils.loadUserPhoto(binding.ivProfilePic, photoUrl);
+            }
+        } catch (Exception e) {
+            Log.e("PerfilFragment", "Error al cargar imagen", e);
+            // No hacer nada más, continuar con la UI
+        }
     }
 
     private void mostrarDialogoEditarPerfil() {
