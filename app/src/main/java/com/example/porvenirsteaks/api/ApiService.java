@@ -160,7 +160,7 @@ public interface ApiService {
     // Para subir foto de perfil
     @Multipart
     @POST("user/upload-photo")
-    Call<User> uploadProfileImage(@Part MultipartBody.Part image);
+    Call<UserResponse> uploadProfileImage(@Part MultipartBody.Part image);
 
     // Para solicitud de repartidor
     @POST("user/solicitar-repartidor")
