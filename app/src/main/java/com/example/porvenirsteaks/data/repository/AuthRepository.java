@@ -13,6 +13,7 @@ import com.example.porvenirsteaks.data.model.requests.LoginRequest;
 import com.example.porvenirsteaks.data.model.requests.RegisterRequest;
 import com.example.porvenirsteaks.data.model.responses.LoginResponse;
 import com.example.porvenirsteaks.data.model.responses.RegisterResponse;
+import com.example.porvenirsteaks.data.model.responses.UserResponse;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
@@ -30,6 +31,7 @@ import retrofit2.Response;
 public class AuthRepository {
     private ApiService apiService;
     private Context context;
+    private static final String TAG = "AuthRepository";
 
     public AuthRepository(Context context) {
         this.context = context;
@@ -180,18 +182,21 @@ public class AuthRepository {
         MutableLiveData<Resource<User>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
-        apiService.getUserProfile().enqueue(new Callback<User>() {
+        apiService.getUserProfile().enqueue(new Callback<UserResponse>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    result.setValue(Resource.success(response.body()));
+            public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
+                if (response.isSuccessful() && response.body() != null && response.body().getUser() != null) {
+                    User user = response.body().getUser();
+                    result.setValue(Resource.success(user));
                 } else {
+                    // Manejo de errores...
                     result.setValue(Resource.error("Error al obtener perfil", null));
                 }
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
+            public void onFailure(Call<UserResponse> call, Throwable t) {
+                Log.e(TAG, "Error al obtener perfil", t);
                 result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
             }
         });
