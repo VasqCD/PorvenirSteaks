@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -18,6 +19,7 @@ import com.example.porvenirsteaks.R;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 
 public class ImageUtils {
     public static void loadImage(ImageView imageView, String imageUrl) {
@@ -95,61 +97,50 @@ public class ImageUtils {
      * Obtiene el path real de un Uri
      */
     public static String getRealPathFromURI(Context context, Uri uri) {
-        // Para documentos de tipo "content://"
-        if (DocumentsContract.isDocumentUri(context, uri)) {
-            // ExternalStorageProvider
-            if (isExternalStorageDocument(uri)) {
-                String docId = DocumentsContract.getDocumentId(uri);
-                String[] split = docId.split(":");
-                String type = split[0];
+        String filePath = "";
+        try {
+            // Check for newer Android versions
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Use ContentResolver for Android 10 and above
+                InputStream inputStream = context.getContentResolver().openInputStream(uri);
+                if (inputStream != null) {
+                    File tempFile = File.createTempFile("image", ".jpg", context.getCacheDir());
+                    FileOutputStream outputStream = new FileOutputStream(tempFile);
 
-                if ("primary".equalsIgnoreCase(type)) {
-                    return Environment.getExternalStorageDirectory() + "/" + split[1];
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        outputStream.write(buffer, 0, bytesRead);
+                    }
+
+                    inputStream.close();
+                    outputStream.close();
+
+                    filePath = tempFile.getAbsolutePath();
+                }
+            } else {
+                // For older Android versions
+                String[] projection = {MediaStore.Images.Media.DATA};
+                Cursor cursor = context.getContentResolver().query(uri, projection, null, null, null);
+                if (cursor != null) {
+                    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                    cursor.moveToFirst();
+                    filePath = cursor.getString(column_index);
+                    cursor.close();
                 }
             }
-            // MediaProvider
-            else if (isMediaDocument(uri)) {
-                String docId = DocumentsContract.getDocumentId(uri);
-                String[] split = docId.split(":");
-                String type = split[0];
-
-                Uri contentUri = null;
-                if ("image".equals(type)) {
-                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-                } else if ("video".equals(type)) {
-                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI;
-                } else if ("audio".equals(type)) {
-                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI;
-                }
-
-                String selection = "_id=?";
-                String[] selectionArgs = new String[]{split[1]};
-
-                return getDataColumn(context, contentUri, selection, selectionArgs);
-            }
-            // DownloadsProvider
-            else if (isDownloadsDocument(uri)) {
-                String id = DocumentsContract.getDocumentId(uri);
-                if (id.startsWith("raw:")) {
-                    return id.substring(4);
-                }
-
-                Uri contentUri = ContentUris.withAppendedId(
-                        Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
-
-                return getDataColumn(context, contentUri, null, null);
-            }
-        }
-        // MediaStore (y otros content providers)
-        else if ("content".equalsIgnoreCase(uri.getScheme())) {
-            return getDataColumn(context, uri, null, null);
-        }
-        // File
-        else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return uri.getPath();
+        } catch (Exception e) {
+            Log.e("ImageUtils", "Error getting real path from URI: " + e.getMessage());
         }
 
-        return null;
+        return filePath;
+    }
+
+    public static Uri getImageUri(Context context, Bitmap bitmap) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(context.getContentResolver(), bitmap, "Title", null);
+        return Uri.parse(path);
     }
 
     private static String getDataColumn(Context context, Uri uri, String selection, String[] selectionArgs) {
