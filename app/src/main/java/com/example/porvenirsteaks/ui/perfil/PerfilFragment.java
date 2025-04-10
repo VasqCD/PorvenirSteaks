@@ -77,6 +77,7 @@ public class PerfilFragment extends Fragment {
         // Configurar botón editar foto
         binding.fabEditFoto.setOnClickListener(v -> {
             checkAndRequestImagePermissions();
+            Log.d("PerfilFragment", "Botón de editar foto presionado");
         });
 
         // Configurar botones de acciones
@@ -289,18 +290,28 @@ public class PerfilFragment extends Fragment {
     }
 
     private void openImagePicker() {
-        // Verificar permisos primero
-        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            // Solicitar permisos
-            requestPermissions(new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                    STORAGE_PERMISSION_REQUEST);
+        boolean permissionGranted;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            // En Android 13 y superiores
+            permissionGranted = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_MEDIA_IMAGES)
+                    == PackageManager.PERMISSION_GRANTED;
+        } else {
+            // En versiones anteriores a Android 13
+            permissionGranted = ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.READ_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED;
+        }
+
+        if (!permissionGranted) {
+            // Vuelve a solicitar permisos si faltan (o simplemente llama a checkAndRequestImagePermissions() si preferís)
+            checkAndRequestImagePermissions();
             return;
         }
 
+        // Abrir el selector de imágenes
         Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(intent, PICK_IMAGE_REQUEST);
     }
+
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
