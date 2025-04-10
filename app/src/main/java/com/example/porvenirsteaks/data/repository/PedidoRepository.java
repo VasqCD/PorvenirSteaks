@@ -1,6 +1,7 @@
 package com.example.porvenirsteaks.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -10,8 +11,10 @@ import com.example.porvenirsteaks.api.RetrofitClient;
 import com.example.porvenirsteaks.data.model.Pedido;
 import com.example.porvenirsteaks.data.model.requests.PedidoRequest;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
+import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.Resource;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -167,6 +170,48 @@ public class PedidoRepository {
             @Override
             public void onFailure(Call<Pedido> call, Throwable t) {
                 result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
+    /**
+     * Asigna un repartidor a un pedido
+     */
+    public LiveData<Resource<Pedido>> asignarRepartidor(int pedidoId, int repartidorId) {
+        MutableLiveData<Resource<Pedido>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
+        Map<String, Integer> request = new HashMap<>();
+        request.put("repartidor_id", repartidorId);
+
+        apiService.asignarRepartidor(pedidoId, request).enqueue(new Callback<Pedido>() {
+            @Override
+            public void onResponse(Call<Pedido> call, Response<Pedido> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    String errorMessage = "Error: ";
+                    try {
+                        errorMessage += response.errorBody() != null ?
+                                response.errorBody().string() : response.message();
+                    } catch (IOException e) {
+                        errorMessage += response.message();
+                    }
+                    result.setValue(Resource.error(errorMessage, null));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Pedido> call, Throwable t) {
+                Log.e(TAG, "Error al asignar repartidor", t);
+                result.setValue(Resource.error("Error: " + t.getMessage(), null));
             }
         });
 
