@@ -217,7 +217,10 @@ public class PerfilFragment extends Fragment {
                 return;
             }
 
-            Log.d("PerfilFragment", "Actualizando UI con datos: " + user.getName() + ", " + user.getEmail());
+            Log.d("PerfilFragment", "Actualizando UI con datos: Usuario=" + user +
+                    ", Nombre=" + (user != null && user.getName() != null ? user.getName() : "null") +
+                    ", Email=" + (user != null && user.getEmail() != null ? user.getEmail() : "null") +
+                    ", Rol=" + (user != null && user.getRol() != null ? user.getRol() : "null"));
 
             // Actualizar datos básicos
             String nombreCompleto = user.getName();
@@ -267,6 +270,12 @@ public class PerfilFragment extends Fragment {
     }
 
     private String formatearRol(String rol) {
+        // Verificar si el rol es nulo
+        if (rol == null) {
+            Log.w("PerfilFragment", "Rol es nulo en formatearRol");
+            return "Cliente"; // Valor predeterminado
+        }
+
         switch (rol) {
             case Constants.ROL_CLIENTE:
                 return "Cliente";
