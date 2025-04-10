@@ -34,6 +34,8 @@ public class RegisterActivity extends AppCompatActivity {
         binding.tvLogin.setOnClickListener(v -> {
             finish(); // Volver a login
         });
+
+
     }
 
     private boolean validateForm() {
@@ -43,6 +45,7 @@ public class RegisterActivity extends AppCompatActivity {
         String email = binding.etEmail.getText().toString().trim();
         String password = binding.etPassword.getText().toString().trim();
         String confirmPassword = binding.etConfirmPassword.getText().toString().trim();
+        String telefono = binding.etTelefono.getText().toString().trim();
 
         // Validar nombre
         if (TextUtils.isEmpty(name)) {
@@ -83,6 +86,21 @@ public class RegisterActivity extends AppCompatActivity {
             valid = false;
         } else {
             binding.etConfirmPassword.setError(null);
+        }
+
+        // Validar teléfono (si no está vacío)
+        if (!TextUtils.isEmpty(telefono)) {
+            // Eliminar cualquier carácter no numérico para la validación
+            String telefonoNumbers = telefono.replaceAll("[^0-9]", "");
+
+            if (telefonoNumbers.length() != 8) {
+                binding.etTelefono.setError("El teléfono debe tener exactamente 8 dígitos");
+                valid = false;
+            } else {
+                binding.etTelefono.setError(null);
+            }
+        } else {
+            binding.etTelefono.setError(null);
         }
 
         return valid;
