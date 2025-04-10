@@ -47,7 +47,7 @@ public class ImageUtils {
             // Construir URL completa si es necesario
             String fullUrl = photoUrl;
             if (!photoUrl.startsWith("http")) {
-                fullUrl = Constants.BASE_URL + photoUrl;
+                fullUrl = Constants.BASE_IMAGE_URL + photoUrl;
             }
 
             Glide.with(imageView.getContext())
