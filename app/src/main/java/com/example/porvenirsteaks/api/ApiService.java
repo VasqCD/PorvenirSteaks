@@ -18,12 +18,15 @@ import com.example.porvenirsteaks.data.model.responses.RegisterResponse;
 import java.util.List;
 import java.util.Map;
 
+import okhttp3.MultipartBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.DELETE;
 import retrofit2.http.GET;
+import retrofit2.http.Multipart;
 import retrofit2.http.POST;
 import retrofit2.http.PUT;
+import retrofit2.http.Part;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -147,4 +150,17 @@ public interface ApiService {
 
     @POST("pedidos/{id}/asignar-repartidor")
     Call<Pedido> asignarRepartidor(@Path("id") int pedidoId, @Body Map<String, Integer> request);
+
+    // Para el cambio de contraseña
+    @POST("user/change-password")
+    Call<Map<String, Object>> changePassword(@Body Map<String, String> request);
+
+    // Para subir foto de perfil
+    @Multipart
+    @POST("user/upload-photo")
+    Call<User> uploadProfileImage(@Part MultipartBody.Part image);
+
+    // Para solicitud de repartidor
+    @POST("user/solicitar-repartidor")
+    Call<Map<String, Object>> solicitarSerRepartidor();
 }
