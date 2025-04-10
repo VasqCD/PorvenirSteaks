@@ -84,7 +84,29 @@ public class AuthRepository {
                 if (response.isSuccessful() && response.body() != null) {
                     registerResult.setValue(Resource.success(response.body()));
                 } else {
-                    registerResult.setValue(Resource.error("Error en el registro", null));
+                    try {
+                        JSONObject errorBody = new JSONObject(response.errorBody().string());
+                        if (errorBody.has("errors")) {
+                            JSONObject errors = errorBody.getJSONObject("errors");
+
+                            if (errors.has("email")) {
+                                // Error de email
+                                String emailError = errors.getJSONArray("email").getString(0);
+                                registerResult.setValue(Resource.error(emailError, null));
+                            } else if (errors.has("telefono")) {
+                                // Error de teléfono
+                                String telefonoError = errors.getJSONArray("telefono").getString(0);
+                                registerResult.setValue(Resource.error(telefonoError, null));
+                            } else {
+                                // Otro error de validación
+                                registerResult.setValue(Resource.error("Error en el registro: datos inválidos", null));
+                            }
+                        } else {
+                            registerResult.setValue(Resource.error("Error en el registro", null));
+                        }
+                    } catch (Exception e) {
+                        registerResult.setValue(Resource.error("Error en el registro: " + e.getMessage(), null));
+                    }
                 }
             }
 
