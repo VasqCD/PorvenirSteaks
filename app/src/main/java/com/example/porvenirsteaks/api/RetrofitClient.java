@@ -1,6 +1,8 @@
 package com.example.porvenirsteaks.api;
 
 import com.example.porvenirsteaks.utils.Constants;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -21,22 +23,29 @@ public class RetrofitClient {
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .addInterceptor(logging);
 
-        // Agregar token de autenticación si existe
-        if (token != null && !token.isEmpty()) {
-            httpClient.addInterceptor(chain -> {
-                Request original = chain.request();
-                Request request = original.newBuilder()
-                        .header("Authorization", "Bearer " + token)
-                        .header("Accept", "application/json")
-                        .method(original.method(), original.body())
-                        .build();
-                return chain.proceed(request);
-            });
-        }
+        // Siempre agregar cabecera Accept: application/json
+        httpClient.addInterceptor(chain -> {
+            Request original = chain.request();
+            Request.Builder requestBuilder = original.newBuilder()
+                    .header("Accept", "application/json")
+                    .method(original.method(), original.body());
+
+            // Agregar token de autenticación si existe
+            if (token != null && !token.isEmpty()) {
+                requestBuilder.header("Authorization", "Bearer " + token);
+            }
+
+            return chain.proceed(requestBuilder.build());
+        });
+
+        // Crear un Gson más tolerante
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .create();
 
         retrofit = new Retrofit.Builder()
                 .baseUrl(Constants.BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .client(httpClient.build())
                 .build();
 
