@@ -90,15 +90,26 @@ public class MainActivity extends AppCompatActivity {
         // Mostrar/ocultar opciones según el rol del usuario
         String userRole = UserManager.getUserRole(this);
 
-        if (menu.findItem(R.id.nav_repartidor_entregas) != null) {
-            menu.findItem(R.id.nav_repartidor_entregas).setVisible(
-                    userRole.equals("repartidor"));
-        }
+        // Verificar que userRole no sea null antes de usar equals
+        if (userRole != null) {
+            if (menu.findItem(R.id.nav_repartidor_entregas) != null) {
+                menu.findItem(R.id.nav_repartidor_entregas).setVisible(
+                        userRole.equals("repartidor"));
+            }
 
-        // Si hay elementos específicos para administradores
-        if (menu.findItem(R.id.nav_admin_dashboard) != null) {
-            menu.findItem(R.id.nav_admin_dashboard).setVisible(
-                    userRole.equals("administrador"));
+            // Si hay elementos específicos para administradores
+            if (menu.findItem(R.id.nav_admin_dashboard) != null) {
+                menu.findItem(R.id.nav_admin_dashboard).setVisible(
+                        userRole.equals("administrador"));
+            }
+        } else {
+            // Si userRole es null, usar comportamiento predeterminado (ocultar todos los menús específicos)
+            if (menu.findItem(R.id.nav_repartidor_entregas) != null) {
+                menu.findItem(R.id.nav_repartidor_entregas).setVisible(false);
+            }
+            if (menu.findItem(R.id.nav_admin_dashboard) != null) {
+                menu.findItem(R.id.nav_admin_dashboard).setVisible(false);
+            }
         }
     }
 
