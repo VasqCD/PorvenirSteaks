@@ -85,6 +85,10 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         // Aquí podrías hacer algo específico si es necesario
                     }
                     break;
+                case "solicitud_repartidor":
+                    // Notificación de solicitud de repartidor (para administradores)
+                    // Podríamos hacer algo específico si es necesario
+                    break;
                 case "promocion":
                     // Notificaciones de promociones
                     break;

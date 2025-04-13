@@ -252,20 +252,35 @@ public class PerfilViewModel extends AndroidViewModel {
         MutableLiveData<Resource<Map<String, Object>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
-        // Suponiendo que tienes este endpoint en ApiService
+        // Verificar conexión a internet
+        if (!NetworkUtils.isNetworkAvailable(getApplication())) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
+
         apiService.solicitarSerRepartidor().enqueue(new Callback<Map<String, Object>>() {
             @Override
             public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     result.setValue(Resource.success(response.body()));
+                    Log.d(TAG, "Solicitud enviada con éxito: " + response.body());
                 } else {
-                    result.setValue(Resource.error("Error al enviar solicitud", null));
+                    String errorMessage = "Error al enviar solicitud";
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMessage = response.errorBody().string();
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error al procesar respuesta de error", e);
+                    }
+                    result.setValue(Resource.error(errorMessage, null));
+                    Log.e(TAG, "Error al enviar solicitud: " + errorMessage);
                 }
             }
 
             @Override
             public void onFailure(Call<Map<String, Object>> call, Throwable t) {
-                Log.e(TAG, "Error al solicitar ser repartidor", t);
+                Log.e(TAG, "Error de red al solicitar ser repartidor", t);
                 result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
             }
         });
