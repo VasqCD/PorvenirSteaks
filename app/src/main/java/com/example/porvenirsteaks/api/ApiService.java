@@ -141,6 +141,9 @@ public interface ApiService {
     @GET("pedidos/pendientes")
     Call<List<Pedido>> getPedidosPendientes();
 
+    @POST("user/solicitar-repartidor")
+    Call<Map<String, Object>> solicitarSerRepartidor();
+
     @POST("repartidor/ubicacion")
     Call<Map<String, Object>> actualizarUbicacionRepartidor(@Body Map<String, Double> request);
 
@@ -162,7 +165,4 @@ public interface ApiService {
     @POST("user/upload-photo")
     Call<UserResponse> uploadProfileImage(@Part MultipartBody.Part image);
 
-    // Para solicitud de repartidor
-    @POST("user/solicitar-repartidor")
-    Call<Map<String, Object>> solicitarSerRepartidor();
 }
