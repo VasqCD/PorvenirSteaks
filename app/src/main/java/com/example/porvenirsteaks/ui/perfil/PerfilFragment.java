@@ -38,6 +38,8 @@ import com.example.porvenirsteaks.utils.ImageUtils;
 import com.example.porvenirsteaks.utils.NetworkUtils;
 import com.example.porvenirsteaks.utils.PermissionUtils;
 import com.example.porvenirsteaks.utils.Resource;
+import com.example.porvenirsteaks.utils.ToastUtils;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -526,13 +528,21 @@ public class PerfilFragment extends Fragment {
         viewModel.solicitarSerRepartidor().observe(getViewLifecycleOwner(), result -> {
             dialogBinding.progressBar.setVisibility(View.GONE);
 
-            if (result.status == Resource.Status.SUCCESS && result.data != null) {
-                Toast.makeText(requireContext(), "Solicitud enviada exitosamente", Toast.LENGTH_LONG).show();
+            if (result.status == Resource.Status.SUCCESS) {
+                ToastUtils.showSuccessToast(requireContext(), "Solicitud enviada exitosamente");
                 dialog.dismiss();
+
+                // Mostrar diálogo informativo
+                new MaterialAlertDialogBuilder(requireContext())
+                        .setTitle("Solicitud Enviada")
+                        .setMessage("Tu solicitud para ser repartidor ha sido enviada con éxito. Nos pondremos en contacto contigo pronto para los siguientes pasos.")
+                        .setPositiveButton("Entendido", null)
+                        .show();
+
             } else if (result.status == Resource.Status.ERROR) {
                 dialogBinding.btnEnviarSolicitud.setEnabled(true);
                 dialogBinding.btnCancelar.setEnabled(true);
-                Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
+                ToastUtils.showErrorToast(requireContext(), "Error: " + result.message);
             }
         });
     }
