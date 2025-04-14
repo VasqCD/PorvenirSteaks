@@ -2,8 +2,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/action_logout"
+        android:id="@+id/action_cart"
+        android:icon="@drawable/ic_shopping_cart"
         android:orderInCategory="100"
+        android:title="Carrito"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/action_logout"
+        android:orderInCategory="101"
         android:title="Cerrar Sesión"
         app:showAsAction="never" />
 </menu>
