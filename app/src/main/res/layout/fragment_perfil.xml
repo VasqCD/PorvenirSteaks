@@ -312,12 +312,12 @@
         android:id="@+id/ivProfilePic"
         android:layout_width="120dp"
         android:layout_height="120dp"
+        android:layout_marginBottom="-60dp"
         android:src="@drawable/user_placeholder"
         app:civ_border_color="@color/white"
         app:civ_border_width="4dp"
         app:layout_anchor="@id/appBarLayout"
-        app:layout_anchorGravity="bottom|center_horizontal"
-        android:layout_marginBottom="-60dp" />
+        app:layout_anchorGravity="bottom|center_horizontal" />
 
     <ProgressBar
         android:id="@+id/progressBar"
