@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/nav_home"
+        android:icon="@drawable/ic_home"
+        android:title="Inicio"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/nav_productos"
+        android:icon="@drawable/ic_menu"
+        android:title="Productos"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/carritoFragment"
+        android:icon="@drawable/ic_shopping_cart"
+        android:title="Carrito"
+        app:showAsAction="ifRoom" />
+
+    <item android:id="@+id/menu_more"
+        android:title="Más"
+        android:icon="@drawable/ic_more"
+        app:showAsAction="ifRoom">
+
+        <menu>
+            <item
+                android:id="@+id/nav_pedidos"
+                android:icon="@drawable/ic_orders"
+                android:title="Mis Pedidos" />
+
+            <item
+                android:id="@+id/nav_ubicaciones"
+                android:icon="@drawable/ic_location"
+                android:title="Mis Ubicaciones" />
+
+            <item
+                android:id="@+id/nav_notificaciones"
+                android:icon="@drawable/ic_notification"
+                android:title="Notificaciones" />
+
+            <item
+                android:id="@+id/nav_perfil"
+                android:icon="@drawable/ic_person"
+                android:title="Mi Perfil" />
+        </menu>
+    </item>
+
+    <!-- Elementos para roles específicos -->
+    <group android:id="@+id/menu_roles" android:visible="false">
+        <item
+            android:id="@+id/nav_repartidor_entregas"
+            android:icon="@drawable/ic_orders"
+            android:title="Mis Entregas" />
+        <item
+            android:id="@+id/nav_admin_dashboard"
+            android:icon="@drawable/ic_home"
+            android:title="Dashboard" />
+    </group>
+</menu>
