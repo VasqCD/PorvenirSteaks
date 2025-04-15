@@ -1,6 +1,7 @@
 package com.example.porvenirsteaks.data.repository;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
@@ -8,6 +9,7 @@ import androidx.lifecycle.MutableLiveData;
 import com.example.porvenirsteaks.api.ApiService;
 import com.example.porvenirsteaks.api.RetrofitClient;
 import com.example.porvenirsteaks.data.model.Notificacion;
+import com.example.porvenirsteaks.data.model.responses.PaginatedResponse;
 import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.utils.Resource;
 
@@ -30,18 +32,30 @@ public class NotificacionRepository {
         MutableLiveData<Resource<List<Notificacion>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
 
-        apiService.getNotificaciones().enqueue(new Callback<List<Notificacion>>() {
+        apiService.getNotificaciones().enqueue(new Callback<PaginatedResponse<Notificacion>>() {
             @Override
-            public void onResponse(Call<List<Notificacion>> call, Response<List<Notificacion>> response) {
+            public void onResponse(Call<PaginatedResponse<Notificacion>> call, Response<PaginatedResponse<Notificacion>> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    result.setValue(Resource.success(response.body()));
+                    Log.d("NotificacionRepo", "Respuesta exitosa, obteniendo datos paginados");
+                    // Extraer la lista de notificaciones de la respuesta paginada
+                    List<Notificacion> notificaciones = response.body().getData();
+                    Log.d("NotificacionRepo", "Notificaciones obtenidas: " + (notificaciones != null ? notificaciones.size() : "null"));
+                    result.setValue(Resource.success(notificaciones));
                 } else {
-                    result.setValue(Resource.error("Error al obtener notificaciones", null));
+                    try {
+                        String errorBody = response.errorBody() != null ? response.errorBody().string() : "Desconocido";
+                        Log.e("NotificacionRepo", "Error al obtener notificaciones: " + response.code() + " - " + errorBody);
+                        result.setValue(Resource.error("Error al obtener notificaciones: " + response.code(), null));
+                    } catch (Exception e) {
+                        Log.e("NotificacionRepo", "Error al procesar respuesta de error", e);
+                        result.setValue(Resource.error("Error al obtener notificaciones", null));
+                    }
                 }
             }
 
             @Override
-            public void onFailure(Call<List<Notificacion>> call, Throwable t) {
+            public void onFailure(Call<PaginatedResponse<Notificacion>> call, Throwable t) {
+                Log.e("NotificacionRepo", "Error de conexión al obtener notificaciones", t);
                 result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
             }
         });
