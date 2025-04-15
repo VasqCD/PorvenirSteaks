@@ -39,8 +39,10 @@ import com.example.porvenirsteaks.ui.auth.LoginActivity;
 import com.example.porvenirsteaks.ui.ubicaciones.DireccionConfirmationActivity;
 import com.example.porvenirsteaks.utils.ImageUtils;
 import com.example.porvenirsteaks.utils.LocationPermissionHandler;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
@@ -50,6 +52,7 @@ import java.util.Map;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
+import android.Manifest;
 
 public class MainActivity extends AppCompatActivity {
     private static final int REQUEST_PERMISSIONS = 1000;
@@ -67,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
+
+        // Inicializar Firebase
+        FirebaseApp.initializeApp(this);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -115,20 +121,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Verificar si hay datos de notificación en el intent
         procesarNotificacion(getIntent());
-    }
-
-    private void solicitarPermisoNotificaciones() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-
-                // Solicitar permiso
-                ActivityCompat.requestPermissions(
-                        this,
-                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                        100); // Código de solicitud
-            }
-        }
     }
 
     private void registrarTokenFCM() {
@@ -202,7 +194,7 @@ public class MainActivity extends AppCompatActivity {
 
                         // Navegar usando Navigation Component
                         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-                        navController.navigate(R.id.action_nav_home_to_detallePedidoFragment, args);
+                        navController.navigate(R.id.detallePedidoFragment, args);
                     } catch (NumberFormatException e) {
                         Log.e("Notificacion", "Error al parsear pedido_id: " + e.getMessage());
                     }
@@ -218,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
                     case "pedido_update":
                         // Navegar a la lista de pedidos
                         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-                        navController.navigate(R.id.action_nav_home_to_nav_pedidos);
+                        navController.navigate(R.id.nav_pedidos);
                         break;
                     // Otros casos...
                 }
@@ -381,6 +373,14 @@ public class MainActivity extends AppCompatActivity {
                         startActivity(intent);
                     }).show();
                 }
+            });
+        }
+    }
+
+    private void solicitarPermisoNotificaciones() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            permissionHandler.requestNotificationPermission(granted -> {
+                Log.d("Permisos", "Permiso de notificaciones concedido: " + granted);
             });
         }
     }
