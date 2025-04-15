@@ -1,8 +1,11 @@
 package com.example.porvenirsteaks;
 
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
@@ -16,6 +19,8 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -36,6 +41,7 @@ import com.example.porvenirsteaks.utils.ImageUtils;
 import com.example.porvenirsteaks.utils.LocationPermissionHandler;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
 import java.util.List;
@@ -103,6 +109,121 @@ public class MainActivity extends AppCompatActivity {
 
         // Verificar si es el primer inicio de sesión y la existencia de direcciones
         verificarPrimerInicio();
+
+        solicitarPermisoNotificaciones();
+        registrarTokenFCM();
+
+        // Verificar si hay datos de notificación en el intent
+        procesarNotificacion(getIntent());
+    }
+
+    private void solicitarPermisoNotificaciones() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+
+                // Solicitar permiso
+                ActivityCompat.requestPermissions(
+                        this,
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
+                        100); // Código de solicitud
+            }
+        }
+    }
+
+    private void registrarTokenFCM() {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("FCM", "Error al obtener el token FCM", task.getException());
+                        return;
+                    }
+
+                    // Obtener el token
+                    String token = task.getResult();
+                    Log.d("FCM", "Token FCM: " + token);
+
+                    // Verificar si hay un usuario autenticado
+                    if (TokenManager.hasToken(this)) {
+                        // Registrar el token en el servidor
+                        Map<String, String> request = new HashMap<>();
+                        request.put("token", token);
+                        request.put("device_type", "android");
+
+                        RetrofitClient.getClient(TokenManager.getToken(this))
+                                .create(ApiService.class)
+                                .registerFcmToken(request)
+                                .enqueue(new Callback<Map<String, Object>>() {
+                                    @Override
+                                    public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                                        if (response.isSuccessful()) {
+                                            Log.d("FCM", "Token FCM registrado exitosamente en el servidor");
+                                        } else {
+                                            Log.e("FCM", "Error al registrar token FCM: " + response.code());
+                                        }
+                                    }
+
+                                    @Override
+                                    public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                                        Log.e("FCM", "Error de conexión al registrar token FCM: " + t.getMessage());
+                                    }
+                                });
+                    } else {
+                        // Guardar el token para enviarlo cuando el usuario inicie sesión
+                        getSharedPreferences("FCM", Context.MODE_PRIVATE)
+                                .edit()
+                                .putString("pending_token", token)
+                                .apply();
+                    }
+                });
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        procesarNotificacion(intent);
+    }
+
+    private void procesarNotificacion(Intent intent) {
+        if (intent != null && intent.getExtras() != null) {
+            // Verificar si se abrió desde una notificación
+            if (intent.hasExtra("pedido_id")) {
+                // Obtener el ID del pedido
+                String pedidoId = intent.getStringExtra("pedido_id");
+                Log.d("Notificacion", "Abriendo detalle de pedido: " + pedidoId);
+
+                // Abrir el detalle del pedido
+                // Aquí deberías navegar al fragmento de detalle del pedido
+                if (pedidoId != null) {
+                    try {
+                        int id = Integer.parseInt(pedidoId);
+                        Bundle args = new Bundle();
+                        args.putInt("pedido_id", id);
+
+                        // Navegar usando Navigation Component
+                        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.action_nav_home_to_detallePedidoFragment, args);
+                    } catch (NumberFormatException e) {
+                        Log.e("Notificacion", "Error al parsear pedido_id: " + e.getMessage());
+                    }
+                }
+            }
+
+            // Verificar si hay un tipo de notificación
+            if (intent.hasExtra("type")) {
+                String type = intent.getStringExtra("type");
+                Log.d("Notificacion", "Tipo de notificación: " + type);
+
+                switch (type) {
+                    case "pedido_update":
+                        // Navegar a la lista de pedidos
+                        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
+                        navController.navigate(R.id.action_nav_home_to_nav_pedidos);
+                        break;
+                    // Otros casos...
+                }
+            }
+        }
     }
 
     private void setupNavigationMenu(NavigationView navigationView) {
@@ -284,7 +405,20 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Manejo de permisos existentes con el handler
         permissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        // Manejo específico para el permiso de notificaciones
+        if (requestCode == 100) {
+            // Manejar resultado del permiso de notificaciones
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Log.d("Notificaciones", "Permiso de notificaciones concedido");
+            } else {
+                Log.d("Notificaciones", "Permiso de notificaciones denegado");
+                // Puedes mostrar un mensaje al usuario explicando por qué son importantes las notificaciones
+            }
+        }
     }
 
     @Override
