@@ -13,6 +13,7 @@ import com.example.porvenirsteaks.data.model.requests.PedidoRequest;
 import com.example.porvenirsteaks.data.model.requests.RegisterRequest;
 import com.example.porvenirsteaks.data.model.requests.UbicacionRequest;
 import com.example.porvenirsteaks.data.model.responses.LoginResponse;
+import com.example.porvenirsteaks.data.model.responses.PaginatedResponse;
 import com.example.porvenirsteaks.data.model.responses.RegisterResponse;
 import com.example.porvenirsteaks.data.model.responses.UserResponse;
 
@@ -125,7 +126,7 @@ public interface ApiService {
 
     // Notificaciones Endpoints
     @GET("notificaciones")
-    Call<List<Notificacion>> getNotificaciones();
+    Call<PaginatedResponse<Notificacion>> getNotificaciones();
 
     @POST("notificaciones/{id}/marcar-leida")
     Call<Notificacion> marcarNotificacionLeida(@Path("id") int id);
