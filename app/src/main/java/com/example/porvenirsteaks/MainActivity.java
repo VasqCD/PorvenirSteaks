@@ -42,6 +42,7 @@ import com.example.porvenirsteaks.utils.LocationPermissionHandler;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.HashMap;
@@ -69,6 +70,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
+
+        // Inicializar Firebase
+        FirebaseApp.initializeApp(this);
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -375,32 +379,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void solicitarPermisoNotificaciones() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                    != PackageManager.PERMISSION_GRANTED) {
-
-                // Verificar si debemos mostrar explicación
-                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)) {
-                    // Mostrar diálogo explicando por qué necesitamos el permiso
-                    new MaterialAlertDialogBuilder(this)
-                            .setTitle("Permiso de notificaciones")
-                            .setMessage("Necesitamos tu permiso para enviarte notificaciones sobre el estado de tus pedidos.")
-                            .setPositiveButton("Aceptar", (dialog, which) -> {
-                                // Solicitar permiso después de explicación
-                                ActivityCompat.requestPermissions(
-                                        this,
-                                        new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                                        100);
-                            })
-                            .setNegativeButton("Cancelar", null)
-                            .show();
-                } else {
-                    // Solicitar permiso directamente
-                    ActivityCompat.requestPermissions(
-                            this,
-                            new String[]{Manifest.permission.POST_NOTIFICATIONS},
-                            100);
-                }
-            }
+            permissionHandler.requestNotificationPermission(granted -> {
+                Log.d("Permisos", "Permiso de notificaciones concedido: " + granted);
+            });
         }
     }
 
