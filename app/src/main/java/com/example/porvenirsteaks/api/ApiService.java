@@ -138,6 +138,10 @@ public interface ApiService {
     @POST("fcm/register")
     Call<Map<String, Object>> registerFcmToken(@Body Map<String, String> request);
 
+    @POST("fcm/test")
+    Call<Map<String, Object>> testNotification();
+
+
     // Repartidor Endpoints
     @GET("pedidos/pendientes")
     Call<List<Pedido>> getPedidosPendientes();
@@ -165,8 +169,5 @@ public interface ApiService {
     @Multipart
     @POST("user/upload-photo")
     Call<UserResponse> uploadProfileImage(@Part MultipartBody.Part image);
-
-    @POST("notifications/test")
-    Call<Map<String, Object>> testNotification();
 
 }
