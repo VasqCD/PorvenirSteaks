@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.text.TextUtils;
 import android.util.Log;
@@ -25,6 +26,8 @@ import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.example.porvenirsteaks.R;
 import com.example.porvenirsteaks.api.ApiService;
 import com.example.porvenirsteaks.api.RetrofitClient;
@@ -399,8 +402,54 @@ public class PerfilFragment extends Fragment {
             binding.progressBar.setVisibility(View.GONE);
 
             if (result.status == Resource.Status.SUCCESS && result.data != null) {
+                // Mostrar mensaje de éxito
                 Toast.makeText(requireContext(), "Imagen de perfil actualizada", Toast.LENGTH_SHORT).show();
-                actualizarUIConDatosUsuario(result.data);
+
+                // Obtener los datos más recientes
+                User updatedUser = result.data;
+
+                if (updatedUser.getFotoPerfil() != null && !updatedUser.getFotoPerfil().isEmpty()) {
+                    String photoUrl = updatedUser.getFotoPerfil();
+                    String fullUrl;
+                    if (!photoUrl.startsWith("http")) {
+                        fullUrl = Constants.BASE_IMAGE_URL + photoUrl;
+                    } else {
+                        fullUrl = photoUrl;
+                    }
+
+                    Log.d("PerfilFragment", "Nueva foto de perfil URL: " + fullUrl);
+
+                    // Limpiar la caché específicamente para esta imagen
+                    try {
+                        // Limpiar las cachés de Glide
+                        Glide.get(requireContext()).clearMemory();
+                        new Thread(() -> Glide.get(requireContext()).clearDiskCache()).start();
+
+                        // Método alternativo: recargar completamente la foto
+                        binding.ivProfilePic.post(() -> {
+                            // Reiniciar la imagen primero con el placeholder
+                            binding.ivProfilePic.setImageResource(R.drawable.user_placeholder);
+
+                            // Esperar un breve momento y luego cargar la nueva imagen
+                            new Handler().postDelayed(() -> {
+                                // Cargar la imagen directamente sin pasar por nuestro método loadUserPhoto
+                                Glide.with(requireContext())
+                                        .load(fullUrl + "?t=" + System.currentTimeMillis()) // Agregar query param para forzar recarga
+                                        .diskCacheStrategy(DiskCacheStrategy.NONE)
+                                        .skipMemoryCache(true)
+                                        .placeholder(R.drawable.user_placeholder)
+                                        .error(R.drawable.user_placeholder)
+                                        .circleCrop()
+                                        .into(binding.ivProfilePic);
+                            }, 300); // Un poco más de tiempo de retraso
+                        });
+                    } catch (Exception e) {
+                        Log.e("PerfilFragment", "Error al cargar nueva imagen: " + e.getMessage(), e);
+                    }
+                }
+
+                // Actualizar el resto de la UI
+                actualizarUIConDatosUsuario(updatedUser);
             } else if (result.status == Resource.Status.ERROR) {
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
             }

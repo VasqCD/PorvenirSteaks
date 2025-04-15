@@ -12,6 +12,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.ImageView;
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.engine.DiskCacheStrategy;
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.porvenirsteaks.R;
@@ -50,13 +51,14 @@ public class ImageUtils {
                 fullUrl = Constants.BASE_IMAGE_URL + photoUrl;
             }
 
-            Glide.with(imageView.getContext())
+            Log.d("ImageUtils", "Cargando foto de perfil: " + fullUrl);
+
+            // Usar un enfoque más simple y directo con Glide
+            Glide.with(imageView.getContext().getApplicationContext()) // Usar ApplicationContext para evitar memory leaks
                     .load(fullUrl)
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .apply(new RequestOptions()
-                            .placeholder(R.drawable.user_placeholder)
-                            .error(R.drawable.user_placeholder)
-                            .circleCrop())
+                    .placeholder(R.drawable.user_placeholder)
+                    .error(R.drawable.user_placeholder)
+                    .circleCrop()
                     .into(imageView);
         } else {
             imageView.setImageResource(R.drawable.user_placeholder);
@@ -71,11 +73,48 @@ public class ImageUtils {
     public static File compressImage(Context context, Uri imageUri) {
         try {
             // Obtener bitmap de la Uri
-            Bitmap bitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), imageUri);
+            Bitmap originalBitmap = MediaStore.Images.Media.getBitmap(context.getContentResolver(), imageUri);
 
-            // Comprimir a una calidad media (70%)
+            // Obtener las dimensiones originales
+            int originalWidth = originalBitmap.getWidth();
+            int originalHeight = originalBitmap.getHeight();
+
+            // Calcular nuevas dimensiones (limitar a máximo 1000px en cualquier dimensión)
+            float maxDimension = 1000.0f;
+            float scale = 1.0f;
+
+            if (originalWidth > maxDimension || originalHeight > maxDimension) {
+                if (originalWidth > originalHeight) {
+                    scale = maxDimension / originalWidth;
+                } else {
+                    scale = maxDimension / originalHeight;
+                }
+            }
+
+            // Redimensionar bitmap si es necesario
+            Bitmap resizedBitmap;
+            if (scale < 1.0f) {
+                int newWidth = Math.round(originalWidth * scale);
+                int newHeight = Math.round(originalHeight * scale);
+                resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, newWidth, newHeight, true);
+            } else {
+                resizedBitmap = originalBitmap;
+            }
+
+            // Comprimir a una calidad menor
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 50, baos);
+
+            // Verificar si el tamaño sigue siendo muy grande
+            byte[] imageBytes = baos.toByteArray();
+            int imageSize = imageBytes.length;
+
+            // Si aún es más de 1MB, reducir más la calidad
+            if (imageSize > 1024 * 1024) {
+                baos.reset();
+                resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 30, baos);
+                imageBytes = baos.toByteArray();
+            }
 
             // Crear archivo temporal para guardar la imagen comprimida
             File outputDir = context.getCacheDir();
@@ -85,6 +124,10 @@ public class ImageUtils {
             FileOutputStream fos = new FileOutputStream(outputFile);
             fos.write(baos.toByteArray());
             fos.close();
+
+            // Log del tamaño final para verificación
+            Log.d("ImageUtils", "Tamaño original: " + originalBitmap.getByteCount() + " bytes");
+            Log.d("ImageUtils", "Tamaño después de comprimir: " + baos.size() + " bytes");
 
             return outputFile;
         } catch (Exception e) {
