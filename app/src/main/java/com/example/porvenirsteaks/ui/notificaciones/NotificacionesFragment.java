@@ -1,6 +1,7 @@
 package com.example.porvenirsteaks.ui.notificaciones;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -70,20 +71,27 @@ public class NotificacionesFragment extends Fragment {
             binding.progressBar.setVisibility(
                     result.status == Resource.Status.LOADING ? View.VISIBLE : View.GONE);
 
+            Log.d("NotificacionesFragment", "Estado: " + result.status +
+                    ", Datos: " + (result.data != null ? result.data.size() : "null") +
+                    ", Mensaje: " + result.message);
+
             if (result.status == Resource.Status.SUCCESS && result.data != null) {
                 adapter.submitList(result.data);
 
                 // Mostrar mensaje de vacío si no hay notificaciones
                 if (result.data.isEmpty()) {
+                    Log.d("NotificacionesFragment", "No hay notificaciones para mostrar");
                     binding.tvEmptyState.setVisibility(View.VISIBLE);
                     binding.recyclerViewNotificaciones.setVisibility(View.GONE);
                     binding.btnMarcarTodasLeidas.setVisibility(View.GONE);
                 } else {
+                    Log.d("NotificacionesFragment", "Mostrando " + result.data.size() + " notificaciones");
                     binding.tvEmptyState.setVisibility(View.GONE);
                     binding.recyclerViewNotificaciones.setVisibility(View.VISIBLE);
                     binding.btnMarcarTodasLeidas.setVisibility(View.VISIBLE);
                 }
             } else if (result.status == Resource.Status.ERROR) {
+                Log.e("NotificacionesFragment", "Error al cargar notificaciones: " + result.message);
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
                 binding.tvEmptyState.setVisibility(View.VISIBLE);
                 binding.recyclerViewNotificaciones.setVisibility(View.GONE);
