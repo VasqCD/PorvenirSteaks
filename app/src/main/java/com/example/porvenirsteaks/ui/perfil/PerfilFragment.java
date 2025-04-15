@@ -15,6 +15,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.Button;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -25,7 +26,10 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.porvenirsteaks.R;
+import com.example.porvenirsteaks.api.ApiService;
+import com.example.porvenirsteaks.api.RetrofitClient;
 import com.example.porvenirsteaks.data.model.User;
+import com.example.porvenirsteaks.data.preferences.TokenManager;
 import com.example.porvenirsteaks.data.preferences.UserManager;
 import com.example.porvenirsteaks.databinding.DialogCambiarContrasenaBinding;
 import com.example.porvenirsteaks.databinding.DialogEditarPerfilBinding;
@@ -46,7 +50,13 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+
 import android.Manifest;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class PerfilFragment extends Fragment {
     private FragmentPerfilBinding binding;
@@ -98,6 +108,34 @@ public class PerfilFragment extends Fragment {
         binding.btnCerrarSesion.setOnClickListener(v -> {
             confirmarCerrarSesion();
         });
+
+        // botón de prueba de notificaciones
+        binding.btnTestNotification.setOnClickListener(v -> {
+            testNotification();
+        });
+    }
+
+    private void testNotification() {
+        if (TokenManager.hasToken(requireContext())) {
+            RetrofitClient.getClient(TokenManager.getToken(requireContext()))
+                    .create(ApiService.class)
+                    .testNotification()
+                    .enqueue(new Callback<Map<String, Object>>() {
+                        @Override
+                        public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
+                            if (response.isSuccessful()) {
+                                Toast.makeText(requireContext(), "Notificación de prueba enviada", Toast.LENGTH_SHORT).show();
+                            } else {
+                                Toast.makeText(requireContext(), "Error al enviar notificación de prueba", Toast.LENGTH_SHORT).show();
+                            }
+                        }
+
+                        @Override
+                        public void onFailure(Call<Map<String, Object>> call, Throwable t) {
+                            Toast.makeText(requireContext(), "Error de conexión: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        }
+                    });
+        }
     }
 
     private void checkAndRequestImagePermissions() {

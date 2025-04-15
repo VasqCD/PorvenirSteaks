@@ -290,6 +290,18 @@
                         app:icon="@drawable/ic_logout"
                         app:iconTint="@color/estado_cancelado"
                         app:strokeColor="@color/estado_cancelado" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTestNotification"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Probar notificación"
+                        android:textColor="@color/primary"
+                        app:icon="@drawable/ic_notification"
+                        app:iconTint="@color/primary"
+                        app:strokeColor="@color/primary" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 

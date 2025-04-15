@@ -166,4 +166,7 @@ public interface ApiService {
     @POST("user/upload-photo")
     Call<UserResponse> uploadProfileImage(@Part MultipartBody.Part image);
 
+    @POST("notifications/test")
+    Call<Map<String, Object>> testNotification();
+
 }
