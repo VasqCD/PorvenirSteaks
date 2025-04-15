@@ -184,8 +184,6 @@ public class MainActivity extends AppCompatActivity {
                 String pedidoId = intent.getStringExtra("pedido_id");
                 Log.d("Notificacion", "Abriendo detalle de pedido: " + pedidoId);
 
-                // Abrir el detalle del pedido
-                // Aquí deberías navegar al fragmento de detalle del pedido
                 if (pedidoId != null) {
                     try {
                         int id = Integer.parseInt(pedidoId);
