@@ -12,6 +12,8 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.example.porvenirsteaks.R;
@@ -51,7 +53,10 @@ public class PedidosFragment extends Fragment {
             // Navegar al detalle del pedido
             Bundle args = new Bundle();
             args.putInt("pedido_id", pedido.getId());
-            // navController.navigate(R.id.action_pedidosFragment_to_detallePedidoFragment, args);
+
+            // Obtener NavController desde la vista actual
+            NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+            navController.navigate(R.id.detallePedidoFragment, args);
         });
 
         binding.recyclerViewPedidos.setLayoutManager(new LinearLayoutManager(requireContext()));
