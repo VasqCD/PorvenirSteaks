@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Build;
@@ -98,31 +99,32 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     }
 
     private void mostrarNotificacion(String title, String body, Map<String, String> data) {
-        Intent intent = new Intent(this, MainActivity.class);
+        Log.d(TAG, "Mostrando notificación: " + title + " - " + body);
+        Log.d(TAG, "Datos: " + data);
 
-        // Si hay datos adicionales, agregarlos al intent
+        // Crear intent para abrir la actividad correcta
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        // Agregar datos extras al intent
         if (data != null && !data.isEmpty()) {
             for (Map.Entry<String, String> entry : data.entrySet()) {
                 intent.putExtra(entry.getKey(), entry.getValue());
-            }
-
-            // Si es una notificación de pedido, abrir la actividad específica
-            if (data.containsKey("pedido_id")) {
-                // intent.setClass(this, DetallePedidoActivity.class);
-                intent.putExtra("pedido_id", data.get("pedido_id"));
+                Log.d(TAG, "Agregando extra: " + entry.getKey() + " = " + entry.getValue());
             }
         }
 
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-
+        // Crear PendingIntent con FLAG_IMMUTABLE para Android 12+
         PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
 
+        // Configurar sonido de notificación
         Uri defaultSoundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
 
-        // Crear canal de notificación para Android 8.0+
+        // Crear canal de notificación (Android 8.0+)
         createNotificationChannel();
 
+        // Construir notificación
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(this, CHANNEL_ID)
                         .setSmallIcon(R.drawable.ic_notification)
@@ -130,28 +132,45 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                         .setContentText(body)
                         .setAutoCancel(true)
                         .setSound(defaultSoundUri)
-                        .setContentIntent(pendingIntent);
+                        .setPriority(NotificationCompat.PRIORITY_HIGH) // Alta prioridad
+                        .setContentIntent(pendingIntent)
+                        .setVisibility(NotificationCompat.VISIBILITY_PUBLIC); // Mostrar en pantalla de bloqueo
 
+        // Si el cuerpo del mensaje es largo, usar estilo expandido
+        if (body != null && body.length() > 40) {
+            notificationBuilder.setStyle(new NotificationCompat.BigTextStyle().bigText(body));
+        }
+
+        // Mostrar notificación
         NotificationManager notificationManager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
-        // Generar un ID único basado en el timestamp
+        // Generar ID único para la notificación
         int notificationId = (int) System.currentTimeMillis();
 
+        // Mostrar notificación
         notificationManager.notify(notificationId, notificationBuilder.build());
+
+        Log.d(TAG, "Notificación mostrada con ID: " + notificationId);
     }
 
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
+            // Canal principal
+            NotificationChannel channelPrincipal = new NotificationChannel(
                     CHANNEL_ID,
                     CHANNEL_NAME,
-                    NotificationManager.IMPORTANCE_DEFAULT);
+                    NotificationManager.IMPORTANCE_HIGH); // Cambiar a HIGH para asegurar que se muestre la notificación
 
-            channel.setDescription(CHANNEL_DESC);
+            channelPrincipal.setDescription(CHANNEL_DESC);
+            channelPrincipal.enableLights(true);
+            channelPrincipal.setLightColor(Color.RED);
+            channelPrincipal.enableVibration(true);
+            channelPrincipal.setVibrationPattern(new long[]{100, 200, 300, 400, 500});
+            channelPrincipal.setShowBadge(true);
 
             NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
+            notificationManager.createNotificationChannel(channelPrincipal);
         }
     }
 
