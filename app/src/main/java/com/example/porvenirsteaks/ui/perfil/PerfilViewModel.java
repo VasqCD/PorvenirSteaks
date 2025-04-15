@@ -249,14 +249,49 @@ public class PerfilViewModel extends AndroidViewModel {
             RequestBody requestFile = RequestBody.create(MediaType.parse("image/*"), compressedFile);
             MultipartBody.Part imagePart = MultipartBody.Part.createFormData("foto_perfil", compressedFile.getName(), requestFile);
 
-            // Ahora se usa Call<UserResponse>
             apiService.uploadProfileImage(imagePart).enqueue(new Callback<UserResponse>() {
                 @Override
                 public void onResponse(Call<UserResponse> call, Response<UserResponse> response) {
                     if (response.isSuccessful() && response.body() != null && response.body().getUser() != null) {
-                        User user = response.body().getUser();
-                        UserManager.saveUser(getApplication(), user);
-                        result.setValue(Resource.success(user));
+                        User serverUser = response.body().getUser();
+
+                        // Log para verificar la respuesta del servidor
+                        Log.d(TAG, "Respuesta del servidor (imagen): ID=" + serverUser.getId() +
+                                ", Nombre=" + serverUser.getName() +
+                                ", Foto=" + serverUser.getFotoPerfil());
+
+                        // Crear usuario combinado para preservar todos los datos
+                        User updatedUser = new User();
+                        updatedUser.setId(serverUser.getId());
+                        updatedUser.setFotoPerfil(serverUser.getFotoPerfil());
+
+                        // Obtener datos actuales del usuario
+                        User currentUser = UserManager.getUser(getApplication());
+                        if (currentUser != null) {
+                            // Copiar todos los datos que no estén relacionados con la foto
+                            updatedUser.setName(serverUser.getName() != null ? serverUser.getName() : currentUser.getName());
+                            updatedUser.setApellido(serverUser.getApellido() != null ? serverUser.getApellido() : currentUser.getApellido());
+                            updatedUser.setEmail(serverUser.getEmail() != null ? serverUser.getEmail() : currentUser.getEmail());
+                            updatedUser.setRol(serverUser.getRol() != null ? serverUser.getRol() : currentUser.getRol());
+                            updatedUser.setTelefono(serverUser.getTelefono() != null ? serverUser.getTelefono() : currentUser.getTelefono());
+                            updatedUser.setFechaRegistro(serverUser.getFechaRegistro() != null ? serverUser.getFechaRegistro() : currentUser.getFechaRegistro());
+                            updatedUser.setUltimaConexion(serverUser.getUltimaConexion() != null ? serverUser.getUltimaConexion() : currentUser.getUltimaConexion());
+                            updatedUser.setEmailVerifiedAt(serverUser.getEmailVerifiedAt() != null ? serverUser.getEmailVerifiedAt() : currentUser.getEmailVerifiedAt());
+                        } else {
+                            // Si no hay datos actuales, usar los datos del servidor
+                            updatedUser = serverUser;
+                        }
+
+                        // Log antes de guardar
+                        Log.d(TAG, "Guardando usuario con nueva imagen: ID=" + updatedUser.getId() +
+                                ", Nombre=" + updatedUser.getName() +
+                                ", Foto=" + updatedUser.getFotoPerfil());
+
+                        // Guardar en preferencias locales
+                        UserManager.saveUser(getApplication(), updatedUser);
+
+                        // Devolver el usuario actualizado
+                        result.setValue(Resource.success(updatedUser));
                     } else {
                         try {
                             if (response.errorBody() != null) {
