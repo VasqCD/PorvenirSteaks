@@ -54,6 +54,27 @@ public class UserManager {
         }
     }
 
+    public static void updateUser(Context context, User newUserData) {
+        User currentUser = getUser(context);
+        if (currentUser != null && newUserData != null) {
+            // Solo actualizar los campos que no son nulos en los nuevos datos
+            if (newUserData.getName() != null) currentUser.setName(newUserData.getName());
+            if (newUserData.getApellido() != null) currentUser.setApellido(newUserData.getApellido());
+            if (newUserData.getEmail() != null) currentUser.setEmail(newUserData.getEmail());
+            if (newUserData.getTelefono() != null) currentUser.setTelefono(newUserData.getTelefono());
+            if (newUserData.getRol() != null) currentUser.setRol(newUserData.getRol());
+            if (newUserData.getFotoPerfil() != null) currentUser.setFotoPerfil(newUserData.getFotoPerfil());
+            if (newUserData.getFechaRegistro() != null) currentUser.setFechaRegistro(newUserData.getFechaRegistro());
+            if (newUserData.getUltimaConexion() != null) currentUser.setUltimaConexion(newUserData.getUltimaConexion());
+
+            // Guardar el usuario actualizado
+            saveUser(context, currentUser);
+        } else if (newUserData != null) {
+            // Si no hay usuario actual, guardar el nuevo
+            saveUser(context, newUserData);
+        }
+    }
+
     public static User getUser(Context context) {
         if (context == null) {
             Log.e("UserManager", "Context es nulo al obtener usuario");

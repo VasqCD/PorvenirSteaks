@@ -255,50 +255,79 @@ public class PerfilFragment extends Fragment {
         try {
             if (user == null) {
                 Log.e("PerfilFragment", "Usuario nulo en actualizarUIConDatosUsuario");
-                return;
+                // Intentar recuperar usuario desde preferences si es nulo
+                user = UserManager.getUser(requireContext());
+                if (user == null) {
+                    return; // No podemos hacer nada sin usuario
+                }
             }
 
             Log.d("PerfilFragment", "Actualizando UI con datos: Usuario=" + user +
-                    ", Nombre=" + (user != null && user.getName() != null ? user.getName() : "null") +
-                    ", Email=" + (user != null && user.getEmail() != null ? user.getEmail() : "null") +
-                    ", Rol=" + (user != null && user.getRol() != null ? user.getRol() : "null"));
+                    ", Nombre=" + (user.getName() != null ? user.getName() : "null") +
+                    ", Email=" + (user.getEmail() != null ? user.getEmail() : "null") +
+                    ", Rol=" + (user.getRol() != null ? user.getRol() : "null"));
+
+            // Verificar datos importantes y usar valores predeterminados si son nulos
+            String nombre = user.getName();
+            String email = user.getEmail();
+            String rol = user.getRol();
+            String apellido = user.getApellido();
+            String telefono = user.getTelefono();
+            String fechaRegistro = user.getFechaRegistro();
+            String ultimaConexion = user.getUltimaConexion();
+            String fotoPerfil = user.getFotoPerfil();
+
+            // Intentar recuperar valores faltantes del usuario guardado
+            if (nombre == null || email == null || rol == null) {
+                User storedUser = UserManager.getUser(requireContext());
+                if (storedUser != null) {
+                    if (nombre == null) nombre = storedUser.getName();
+                    if (apellido == null) apellido = storedUser.getApellido();
+                    if (email == null) email = storedUser.getEmail();
+                    if (rol == null) rol = storedUser.getRol();
+                    if (telefono == null) telefono = storedUser.getTelefono();
+                    if (fechaRegistro == null) fechaRegistro = storedUser.getFechaRegistro();
+                    if (ultimaConexion == null) ultimaConexion = storedUser.getUltimaConexion();
+                    if (fotoPerfil == null) fotoPerfil = storedUser.getFotoPerfil();
+                }
+            }
 
             // Actualizar datos básicos
-            String nombreCompleto = user.getName();
-            if (user.getApellido() != null && !user.getApellido().isEmpty()) {
-                nombreCompleto += " " + user.getApellido();
+            String nombreCompleto = (nombre != null) ? nombre : "";
+            if (apellido != null && !apellido.isEmpty()) {
+                nombreCompleto += " " + apellido;
             }
             binding.tvNombreUsuario.setText(nombreCompleto);
             binding.collapsingToolbar.setTitle(nombreCompleto);
 
             // Rol de usuario
-            binding.tvRolUsuario.setText(formatearRol(user.getRol()));
+            binding.tvRolUsuario.setText(formatearRol(rol));
 
             // Información personal
-            binding.tvEmail.setText(user.getEmail());
-            binding.tvTelefono.setText(user.getTelefono() != null ? user.getTelefono() : "No especificado");
+            binding.tvEmail.setText(email != null ? email : "No especificado");
+            binding.tvTelefono.setText(telefono != null ? telefono : "No especificado");
 
             // Fechas usando nuestra nueva utilidad
             binding.tvFechaRegistro.setText(
-                    user.getFechaRegistro() != null ?
-                            DateUtils.formatDateString(user.getFechaRegistro(), "dd/MM/yyyy") :
+                    fechaRegistro != null ?
+                            DateUtils.formatDateString(fechaRegistro, "dd/MM/yyyy") :
                             "No disponible"
             );
 
             binding.tvUltimaConexion.setText(
-                    user.getUltimaConexion() != null ?
-                            DateUtils.formatDateString(user.getUltimaConexion(), "dd/MM/yyyy") :
+                    ultimaConexion != null ?
+                            DateUtils.formatDateString(ultimaConexion, "dd/MM/yyyy") :
                             "No disponible"
             );
 
             // Foto de perfil
-            if (user.getFotoPerfil() != null && !user.getFotoPerfil().isEmpty()) {
-                Log.d("PerfilFragment", "Cargando foto de perfil: " + user.getFotoPerfil());
-                ImageUtils.loadUserPhoto(binding.ivProfilePic, user.getFotoPerfil());
+            if (fotoPerfil != null && !fotoPerfil.isEmpty()) {
+                Log.d("PerfilFragment", "Cargando foto de perfil: " + fotoPerfil);
+                ImageUtils.loadUserPhoto(binding.ivProfilePic, fotoPerfil);
             }
 
             // Mostrar/ocultar botón de solicitar ser repartidor si es cliente
-            if (Constants.ROL_CLIENTE.equals(user.getRol())) {
+            if (Constants.ROL_CLIENTE.equals(rol)) {
                 binding.btnSolicitarSerRepartidor.setVisibility(View.VISIBLE);
             } else {
                 binding.btnSolicitarSerRepartidor.setVisibility(View.GONE);
@@ -454,9 +483,23 @@ public class PerfilFragment extends Fragment {
             dialogBinding.btnGuardar.setEnabled(true);
 
             if (result.status == Resource.Status.SUCCESS && result.data != null) {
-                Toast.makeText(requireContext(), "Perfil actualizado con éxito", Toast.LENGTH_SHORT).show();
-                actualizarUIConDatosUsuario(result.data);
+                // Primero cerrar el diálogo
                 dialog.dismiss();
+
+                // Luego actualizar la UI con los datos actualizados
+                Toast.makeText(requireContext(), "Perfil actualizado con éxito", Toast.LENGTH_SHORT).show();
+
+                // Obtener el usuario más reciente de preferences (por si acaso)
+                User updatedUser = result.data;
+
+                // Actualizar UI con datos actualizados
+                Log.d("PerfilFragment", "Actualizando UI después de guardar cambios: " +
+                        "ID=" + updatedUser.getId() +
+                        ", Nombre=" + updatedUser.getName() +
+                        ", Email=" + updatedUser.getEmail() +
+                        ", Rol=" + updatedUser.getRol());
+
+                actualizarUIConDatosUsuario(updatedUser);
             } else if (result.status == Resource.Status.ERROR) {
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
             }

@@ -127,10 +127,51 @@ public class PerfilViewModel extends AndroidViewModel {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    User user = response.body();
+                    User serverUser = response.body();
+
+                    // Log para verificar la respuesta del servidor
+                    Log.d(TAG, "Respuesta del servidor: ID=" + serverUser.getId() +
+                            ", Nombre=" + serverUser.getName() +
+                            ", Apellido=" + serverUser.getApellido() +
+                            ", Email=" + serverUser.getEmail());
+
+                    // Crear un nuevo usuario con los datos actualizados
+                    User updatedUser = new User();
+                    updatedUser.setId(serverUser.getId());
+                    updatedUser.setName(nombre); // Usar los valores que enviamos en lugar de lo que devuelve el servidor
+                    updatedUser.setApellido(apellido);
+                    updatedUser.setTelefono(telefono);
+
+                    // Obtener otros datos del usuario actual
+                    User currentUser = UserManager.getUser(getApplication());
+                    if (currentUser != null) {
+                        updatedUser.setEmail(serverUser.getEmail() != null ? serverUser.getEmail() : currentUser.getEmail());
+                        updatedUser.setRol(serverUser.getRol() != null ? serverUser.getRol() : currentUser.getRol());
+                        updatedUser.setFotoPerfil(serverUser.getFotoPerfil() != null ? serverUser.getFotoPerfil() : currentUser.getFotoPerfil());
+                        updatedUser.setFechaRegistro(serverUser.getFechaRegistro() != null ? serverUser.getFechaRegistro() : currentUser.getFechaRegistro());
+                        updatedUser.setUltimaConexion(serverUser.getUltimaConexion() != null ? serverUser.getUltimaConexion() : currentUser.getUltimaConexion());
+                        updatedUser.setEmailVerifiedAt(serverUser.getEmailVerifiedAt() != null ? serverUser.getEmailVerifiedAt() : currentUser.getEmailVerifiedAt());
+                    } else {
+                        // Si no hay usuario actual, usar los datos de la respuesta del servidor
+                        updatedUser.setEmail(serverUser.getEmail());
+                        updatedUser.setRol(serverUser.getRol());
+                        updatedUser.setFotoPerfil(serverUser.getFotoPerfil());
+                        updatedUser.setFechaRegistro(serverUser.getFechaRegistro());
+                        updatedUser.setUltimaConexion(serverUser.getUltimaConexion());
+                        updatedUser.setEmailVerifiedAt(serverUser.getEmailVerifiedAt());
+                    }
+
+                    // Log antes de guardar
+                    Log.d(TAG, "Guardando usuario actualizado: ID=" + updatedUser.getId() +
+                            ", Nombre=" + updatedUser.getName() +
+                            ", Email=" + updatedUser.getEmail() +
+                            ", Rol=" + updatedUser.getRol());
+
                     // Guardar en preferencias locales
-                    UserManager.saveUser(getApplication(), user);
-                    result.setValue(Resource.success(user));
+                    UserManager.saveUser(getApplication(), updatedUser);
+
+                    // Devolver el usuario actualizado
+                    result.setValue(Resource.success(updatedUser));
                 } else {
                     result.setValue(Resource.error("Error al actualizar el perfil", null));
                 }
