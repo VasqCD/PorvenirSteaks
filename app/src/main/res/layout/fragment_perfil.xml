@@ -27,7 +27,7 @@
             <View
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:background="@color/primary"
+                android:background="@drawable/bg_gradient"
                 app:layout_collapseMode="parallax" />
 
             <androidx.appcompat.widget.Toolbar
