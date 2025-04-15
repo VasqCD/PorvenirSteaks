@@ -88,7 +88,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPersonName"
-                android:textColor="#383535" />
+                android:textColor="#423F3F" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -113,7 +113,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
-                android:textColor="#FFFFFF" />
+                android:textColor="#423F3F" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -138,7 +138,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="phone"
-                android:textColor="#FFFFFF" />
+                android:textColor="#423F3F" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -165,7 +165,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:textColor="#FFFFFF" />
+                android:textColor="#423F3F" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -192,7 +192,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textPassword"
-                android:textColor="#FFFFFF" />
+                android:textColor="#423F3F" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
