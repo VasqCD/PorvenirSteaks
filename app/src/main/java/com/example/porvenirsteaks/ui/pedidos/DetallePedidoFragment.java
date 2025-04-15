@@ -249,25 +249,20 @@ public class DetallePedidoFragment extends Fragment {
         binding.progressBar.setVisibility(View.VISIBLE);
         binding.btnEnviarCalificacion.setEnabled(false);
 
-        // Eliminar el observer anterior si existe
-        if (calificacionLiveData != null) {
-            calificacionLiveData.removeObservers(getViewLifecycleOwner());
-        }
-
         // Obtener el nuevo LiveData y observarlo
-        calificacionLiveData = viewModel.calificarPedido(pedidoId, calificacion, comentario);
-        calificacionLiveData.observe(getViewLifecycleOwner(), result -> {
+        viewModel.calificarPedido(pedidoId, calificacion, comentario).observe(getViewLifecycleOwner(), result -> {
             binding.progressBar.setVisibility(View.GONE);
             binding.btnEnviarCalificacion.setEnabled(true);
 
-            if (result.status == Resource.Status.SUCCESS && result.data != null) {
+            if (result.status == Resource.Status.SUCCESS) {
                 Toast.makeText(requireContext(), "Calificación enviada con éxito", Toast.LENGTH_SHORT).show();
-                try {
-                    // Actualizar la UI con el pedido actualizado
-                    actualizarUI(result.data);
-                } catch (Exception e) {
-                    Log.e("DetallePedido", "Error al actualizar UI: " + e.getMessage(), e);
-                }
+
+                // En lugar de actualizar la UI, navegamos de vuelta a la lista de pedidos
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigateUp(); // O usa popBackStack() para volver atrás
+
+                // Alternativamente, puedes navegar directamente a nav_pedidos:
+                // navController.navigate(R.id.nav_pedidos);
             } else if (result.status == Resource.Status.ERROR) {
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
             }
