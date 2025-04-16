@@ -73,6 +73,29 @@ public class UbicacionRepository {
         return result;
     }
 
+    public LiveData<Resource<Ubicacion>> updateUbicacion(int id, UbicacionRequest request) {
+        MutableLiveData<Resource<Ubicacion>> result = new MutableLiveData<>();
+        result.setValue(Resource.loading(null));
+
+        apiService.updateUbicacion(id, request).enqueue(new Callback<Ubicacion>() {
+            @Override
+            public void onResponse(Call<Ubicacion> call, Response<Ubicacion> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    result.setValue(Resource.success(response.body()));
+                } else {
+                    result.setValue(Resource.error("Error al actualizar ubicación", null));
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Ubicacion> call, Throwable t) {
+                result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
+            }
+        });
+
+        return result;
+    }
+
     public LiveData<Resource<Boolean>> deleteUbicacion(int id) {
         MutableLiveData<Resource<Boolean>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));

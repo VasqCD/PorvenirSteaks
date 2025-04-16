@@ -1,10 +1,12 @@
 package com.example.porvenirsteaks.ui.ubicaciones;
 
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -16,9 +18,12 @@ import com.example.porvenirsteaks.data.model.Ubicacion;
 import com.example.porvenirsteaks.data.model.requests.UbicacionRequest;
 import com.example.porvenirsteaks.databinding.FragmentAgregarUbicacionBinding;
 import com.example.porvenirsteaks.utils.Resource;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class AgregarUbicacionFragment extends DialogFragment {
+public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     private FragmentAgregarUbicacionBinding binding;
     private UbicacionesViewModel viewModel;
     private Ubicacion ubicacionEditar;
@@ -44,6 +49,22 @@ public class AgregarUbicacionFragment extends DialogFragment {
         fragment.setArguments(args);
         return fragment;
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        BottomSheetDialog dialog = (BottomSheetDialog) getDialog();
+        if (dialog != null) {
+            FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+            if (bottomSheet != null) {
+                bottomSheet.getLayoutParams().height = ViewGroup.LayoutParams.MATCH_PARENT;
+                BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+                behavior.setPeekHeight(Resources.getSystem().getDisplayMetrics().heightPixels);
+                behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            }
+        }
+    }
+
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -175,7 +196,7 @@ public class AgregarUbicacionFragment extends DialogFragment {
 
         // Crear la solicitud
         UbicacionRequest request = new UbicacionRequest(
-                // Por ahora usaremos coordenadas por defecto
+                // Mantener las coordenadas originales si estamos editando
                 ubicacionEditar != null ? ubicacionEditar.getLatitud() : 0,
                 ubicacionEditar != null ? ubicacionEditar.getLongitud() : 0,
                 direccionCompleta,
@@ -191,9 +212,7 @@ public class AgregarUbicacionFragment extends DialogFragment {
 
         // Si es edición, llamar al endpoint de actualización
         if (ubicacionEditar != null) {
-            // Como no tenemos implementado el método de actualización en el ViewModel,
-            // usaremos createUbicacion por ahora
-            viewModel.createUbicacion(request).observe(getViewLifecycleOwner(), result -> {
+            viewModel.updateUbicacion(ubicacionEditar.getId(), request).observe(getViewLifecycleOwner(), result -> {
                 procesarResultado(result);
             });
         } else {
