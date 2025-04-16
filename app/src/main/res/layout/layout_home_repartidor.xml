@@ -4,8 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:layout_height="wrap_content">
 
     <!-- Control de disponibilidad -->
     <androidx.cardview.widget.CardView
@@ -52,140 +51,8 @@
                 android:textColor="@color/estado_en_camino"
                 app:layout_constraintTop_toBottomOf="@id/tvDisponibilidadLabel"
                 app:layout_constraintStart_toStartOf="parent" />
-
         </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.cardview.widget.CardView>
-
-    <!-- Estadísticas rápidas -->
-    <TextView
-        android:id="@+id/tvEstadisticasTitulo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Estadísticas del día"
-        android:textColor="@color/text_primary"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/cardDisponibilidad"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <LinearLayout
-        android:id="@+id/layoutEstadisticas"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal"
-        android:weightSum="3"
-        app:layout_constraintTop_toBottomOf="@id/tvEstadisticasTitulo"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
-
-        <!-- Tarjeta de entregas -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tvEntregasCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    tools:text="5" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Entregas"
-                    android:textAlignment="center"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Tarjeta de distancia recorrida -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tvDistanciaRecorrida"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    tools:text="4.5" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Km"
-                    android:textAlignment="center"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-
-        <!-- Tarjeta de ganancias -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_weight="1"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp">
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:id="@+id/tvGananciasHoy"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/primary"
-                    android:textSize="24sp"
-                    android:textStyle="bold"
-                    tools:text="250" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Lempiras"
-                    android:textAlignment="center"
-                    android:textColor="@color/text_primary" />
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
-    </LinearLayout>
 
     <!-- Entregas pendientes -->
     <TextView
@@ -197,7 +64,7 @@
         android:textColor="@color/text_primary"
         android:textSize="18sp"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/layoutEstadisticas"
+        app:layout_constraintTop_toBottomOf="@id/cardDisponibilidad"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
@@ -222,7 +89,7 @@
         tools:itemCount="2"
         tools:listitem="@layout/item_entrega_home" />
 
-    <!-- Mapa de entregas (vista previa) -->
+    <!-- Mapa de entregas -->
     <TextView
         android:id="@+id/tvMapaTitulo"
         android:layout_width="wrap_content"
@@ -263,7 +130,7 @@
             android:textColor="@color/white" />
     </androidx.cardview.widget.CardView>
 
-    <!-- Estado vacío/carga -->
+    <!-- Estado vacío -->
     <TextView
         android:id="@+id/tvEmptyStateRepartidor"
         android:layout_width="wrap_content"

@@ -1,6 +1,14 @@
 package com.example.porvenirsteaks.ui.home;
 
+import android.Manifest;
+import android.content.Context;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,6 +16,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
@@ -27,6 +36,8 @@ import com.example.porvenirsteaks.ui.home.adapters.PedidoAdapter;
 import com.example.porvenirsteaks.ui.home.adapters.ProductoAdapter;
 import com.example.porvenirsteaks.ui.home.adapters.RepartidorAdapter;
 import com.example.porvenirsteaks.utils.Constants;
+import com.example.porvenirsteaks.utils.LocationPermissionHandler;
+import com.example.porvenirsteaks.utils.MapaManager;
 import com.example.porvenirsteaks.utils.Resource;
 import com.google.android.material.tabs.TabLayoutMediator;
 
@@ -49,6 +60,13 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
     private PedidoAdapter pedidosRecientesAdapter;
     private RepartidorAdapter repartidoresAdapter;
 
+    // Para gestionar mapa y ubicación
+    private MapaManager mapaManager;
+    private LocationPermissionHandler locationPermissionHandler;
+    private static final int LOCATION_UPDATE_INTERVAL = 60000; // 1 minuto
+    private Handler locationUpdateHandler = new Handler(Looper.getMainLooper());
+    private Runnable locationUpdateRunnable;
+
     // Formatter para números
     private NumberFormat currencyFormatter;
 
@@ -65,12 +83,20 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
         homeViewModel = new ViewModelProvider(this).get(HomeViewModel.class);
         currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("es", "HN"));
 
+        // Inicializar el controlador de permisos
+        locationPermissionHandler = new LocationPermissionHandler(requireActivity());
+
         // Inicializar adaptadores
         setupAdapters();
 
         // Configurar interfaz según el rol
         homeViewModel.getUserRole().observe(getViewLifecycleOwner(), userRole -> {
             setupUIForRole(userRole);
+
+            // Si es repartidor, iniciar actualización de ubicación
+            if (Constants.ROL_REPARTIDOR.equals(userRole)) {
+                checkLocationPermissionAndStartUpdates();
+            }
         });
 
         // Cargar elementos comunes
@@ -316,9 +342,6 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
         // Configurar switch de disponibilidad
         setupDisponibilidadSwitch();
 
-        // Configurar estadísticas
-        setupEstadisticasEntregas();
-
         // Configurar entregas pendientes
         setupEntregasPendientes();
 
@@ -327,9 +350,13 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
     }
 
     private void setupDisponibilidadSwitch() {
+        // Iniciar con el estado de carga
+        binding.layoutRepartidor.switchDisponibilidad.setEnabled(false);
+
         // Observar cambios en la disponibilidad
         homeViewModel.getDisponibilidad().observe(getViewLifecycleOwner(), disponible -> {
             binding.layoutRepartidor.switchDisponibilidad.setChecked(disponible);
+            binding.layoutRepartidor.switchDisponibilidad.setEnabled(true);
 
             // Actualizar texto según disponibilidad
             if (disponible) {
@@ -341,17 +368,26 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
             }
         });
 
-        // Configurar cambio de estado
+        // Configurar cambio de estado con mejor manejo de errores
         binding.layoutRepartidor.switchDisponibilidad.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            homeViewModel.setDisponibilidad(isChecked);
-        });
-    }
+            // Evitar ciclos infinitos por la actualización desde LiveData
+            buttonView.setOnCheckedChangeListener(null);
 
-    private void setupEstadisticasEntregas() {
-        homeViewModel.getEstadisticasEntregas().observe(getViewLifecycleOwner(), stats -> {
-            binding.layoutRepartidor.tvEntregasCount.setText(String.valueOf(stats.getEntregasCount()));
-            binding.layoutRepartidor.tvDistanciaRecorrida.setText(String.format("%.1f", stats.getDistanciaRecorrida()));
-            binding.layoutRepartidor.tvGananciasHoy.setText(String.valueOf((int)stats.getGananciasHoy()));
+            // Deshabilitar temporalmente
+            buttonView.setEnabled(false);
+
+            // Mostrar progreso
+            Toast.makeText(requireContext(), "Actualizando disponibilidad...", Toast.LENGTH_SHORT).show();
+
+            // Llamar al ViewModel para actualizar
+            homeViewModel.setDisponibilidad(isChecked);
+
+            // Restaurar el listener después de un breve retraso
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                buttonView.setEnabled(true);
+                buttonView.setOnCheckedChangeListener((b, checked) ->
+                        homeViewModel.setDisponibilidad(checked));
+            }, 1000);
         });
     }
 
@@ -380,12 +416,20 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
     }
 
     private void setupMapaPreview() {
-        // Aquí se configuraría la vista previa del mapa, pero requeriría una implementación más compleja
-        // con Google Maps o similar. Por ahora, configuramos solo el botón de "Ver mapa completo".
+        // Inicializar el gestor de mapa
+        mapaManager = new MapaManager(requireContext(), binding.layoutRepartidor.frameMapPreview);
 
+        // Observar las entregas pendientes para mostrarlas en el mapa
+        homeViewModel.getEntregasPendientes().observe(getViewLifecycleOwner(), resource -> {
+            if (resource.status == Resource.Status.SUCCESS && resource.data != null) {
+                mapaManager.setPedidos(resource.data);
+            }
+        });
+
+        // Configurar acción "Ver mapa completo"
         binding.layoutRepartidor.tvVerMapaCompleto.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Funcionalidad de mapa no implementada", Toast.LENGTH_SHORT).show();
-            // En una implementación real, navegaríamos a un fragmento con mapa completo
+            // Aquí podrías navegar a un fragmento con un mapa de pantalla completa
+            Toast.makeText(requireContext(), "Próximamente: Mapa completo", Toast.LENGTH_SHORT).show();
         });
     }
 
@@ -474,6 +518,77 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
         });
     }
 
+    // MÉTODOS PARA MANEJO DE UBICACIÓN
+
+    private void checkLocationPermissionAndStartUpdates() {
+        locationPermissionHandler.checkLocationPermission(hasPermission -> {
+            if (hasPermission) {
+                startLocationUpdates();
+            } else {
+                Toast.makeText(requireContext(),
+                        "Se requiere permiso de ubicación para mostrar el mapa",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void startLocationUpdates() {
+        // Detener cualquier actualización previa
+        stopLocationUpdates();
+
+        // Crear un nuevo runnable para actualizaciones periódicas
+        locationUpdateRunnable = new Runnable() {
+            @Override
+            public void run() {
+                // Obtener la ubicación actual
+                getCurrentLocation();
+
+                // Programar la próxima actualización
+                locationUpdateHandler.postDelayed(this, LOCATION_UPDATE_INTERVAL);
+            }
+        };
+
+        // Iniciar actualizaciones
+        locationUpdateHandler.post(locationUpdateRunnable);
+    }
+
+    private void stopLocationUpdates() {
+        if (locationUpdateRunnable != null) {
+            locationUpdateHandler.removeCallbacks(locationUpdateRunnable);
+        }
+    }
+
+    private void getCurrentLocation() {
+        try {
+            if (ActivityCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                return;
+            }
+
+            LocationManager locationManager =
+                    (LocationManager) requireContext().getSystemService(Context.LOCATION_SERVICE);
+
+            // Intentar obtener la ubicación más reciente
+            Location location = null;
+            if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            }
+
+            if (location == null && locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                location = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+            }
+
+            if (location != null) {
+                // Actualizar el mapa con la ubicación obtenida
+                if (mapaManager != null) {
+                    mapaManager.setCurrentLocation(location.getLatitude(), location.getLongitude());
+                }
+            }
+        } catch (Exception e) {
+            Log.e("HomeFragment", "Error al obtener ubicación: " + e.getMessage());
+        }
+    }
+
     // MÉTODOS AUXILIARES
 
     @Override
@@ -515,6 +630,54 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
             default:
                 return 0;
         }
+    }
+
+    // MÉTODOS DEL CICLO DE VIDA
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mapaManager != null) {
+            mapaManager.onResume();
+        }
+
+        // Reiniciar actualizaciones de ubicación si es repartidor
+        if (homeViewModel.getUserRole().getValue() != null &&
+                Constants.ROL_REPARTIDOR.equals(homeViewModel.getUserRole().getValue())) {
+            startLocationUpdates();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (mapaManager != null) {
+            mapaManager.onPause();
+        }
+        stopLocationUpdates();
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mapaManager != null) {
+            mapaManager.onDestroy();
+        }
+        stopLocationUpdates();
+        super.onDestroy();
+    }
+
+    @Override
+    public void onLowMemory() {
+        if (mapaManager != null) {
+            mapaManager.onLowMemory();
+        }
+        super.onLowMemory();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        locationPermissionHandler.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override

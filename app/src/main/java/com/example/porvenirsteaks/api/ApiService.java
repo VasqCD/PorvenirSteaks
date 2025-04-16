@@ -152,7 +152,7 @@ public interface ApiService {
     @POST("repartidor/actualizar-ubicacion")
     Call<Map<String, Object>> actualizarUbicacionRepartidor(@Body Map<String, Double> request);
 
-    @POST("repartidor/disponibilidad")
+    @POST("repartidor/cambiar-disponibilidad")
     Call<Map<String, Object>> cambiarDisponibilidadRepartidor(@Body Map<String, Boolean> request);
 
     @GET("repartidores")
