@@ -12,10 +12,7 @@
             android:id="@+id/nav_productos"
             android:icon="@drawable/ic_menu"
             android:title="Productos" />
-        <item
-            android:id="@+id/carritoFragment"
-            android:icon="@drawable/ic_shopping_cart"
-            android:title="Carrito" />
+
         <item
             android:id="@+id/nav_pedidos"
             android:icon="@drawable/ic_orders"

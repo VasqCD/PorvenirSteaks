@@ -37,6 +37,7 @@ import com.example.porvenirsteaks.databinding.ActivityMainBinding;
 import com.example.porvenirsteaks.ui.auth.AuthViewModel;
 import com.example.porvenirsteaks.ui.auth.LoginActivity;
 import com.example.porvenirsteaks.ui.ubicaciones.DireccionConfirmationActivity;
+import com.example.porvenirsteaks.utils.Constants;
 import com.example.porvenirsteaks.utils.ImageUtils;
 import com.example.porvenirsteaks.utils.LocationPermissionHandler;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -245,20 +246,30 @@ public class MainActivity extends AppCompatActivity {
         Menu menu = navigationView.getMenu();
         String userRole = UserManager.getUserRole(this);
 
-        if (userRole != null) {
-            if (menu.findItem(R.id.nav_repartidor_entregas) != null) {
-                menu.findItem(R.id.nav_repartidor_entregas).setVisible(userRole.equals("repartidor"));
-            }
-            if (menu.findItem(R.id.nav_admin_dashboard) != null) {
-                menu.findItem(R.id.nav_admin_dashboard).setVisible(userRole.equals("administrador"));
-            }
-        } else {
-            if (menu.findItem(R.id.nav_repartidor_entregas) != null) {
-                menu.findItem(R.id.nav_repartidor_entregas).setVisible(false);
-            }
-            if (menu.findItem(R.id.nav_admin_dashboard) != null) {
-                menu.findItem(R.id.nav_admin_dashboard).setVisible(false);
-            }
+        // Configurar menú según rol
+        if (Constants.ROL_REPARTIDOR.equals(userRole)) {
+            // Ocultar elementos para repartidor
+            menu.findItem(R.id.nav_productos).setVisible(false);
+            //menu.findItem(R.id.nav_carrito).setVisible(false);
+            menu.findItem(R.id.nav_pedidos).setVisible(false);
+
+            // Mostrar elementos específicos de repartidor
+            menu.findItem(R.id.nav_repartidor_entregas).setVisible(true);
+        }
+        else if (Constants.ROL_ADMINISTRADOR.equals(userRole)) {
+            // Ocultar elementos para administrador
+            menu.findItem(R.id.nav_productos).setVisible(false);
+            //menu.findItem(R.id.nav_carrito).setVisible(false);
+            menu.findItem(R.id.nav_pedidos).setVisible(false);
+            menu.findItem(R.id.nav_ubicaciones).setVisible(false);
+
+            // Mostrar elementos específicos de administrador
+            menu.findItem(R.id.nav_admin_dashboard).setVisible(true);
+        }
+        else {
+            // Cliente: mostrar opciones normales, ocultar las específicas
+            menu.findItem(R.id.nav_repartidor_entregas).setVisible(false);
+            menu.findItem(R.id.nav_admin_dashboard).setVisible(false);
         }
     }
 
