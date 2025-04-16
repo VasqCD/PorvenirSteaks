@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -37,6 +38,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.example.porvenirsteaks.R;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Locale;
+import android.location.Address;
 
 public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     private static final String TAG = "AgregarUbicacionFrag";
@@ -174,6 +180,8 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
                         currentLatitude = location.getLatitude();
                         currentLongitude = location.getLongitude();
                         Toast.makeText(requireContext(), "Ubicación actual obtenida", Toast.LENGTH_SHORT).show();
+
+                        geocodificarCoordenadas(currentLatitude, currentLongitude);
                     } else {
                         Toast.makeText(requireContext(),
                                 "No se pudo obtener la ubicación actual. Intenta seleccionar en el mapa.",
@@ -280,6 +288,8 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
                 currentLongitude = data.getDoubleExtra("longitude", 0);
 
                 Toast.makeText(requireContext(), "Ubicación seleccionada en mapa", Toast.LENGTH_SHORT).show();
+
+                geocodificarCoordenadas(currentLatitude, currentLongitude);
             }
         }
     }
@@ -426,6 +436,48 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
                     .setMessage(result.message)
                     .setPositiveButton("OK", null)
                     .show();
+        }
+    }
+
+    private void geocodificarCoordenadas(double latitud, double longitud) {
+        binding.progressBar.setVisibility(View.VISIBLE);
+
+        Geocoder geocoder = new Geocoder(requireContext(), Locale.getDefault());
+
+        try {
+            List<Address> addresses = geocoder.getFromLocation(latitud, longitud, 1);
+
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+
+                // Llenar formulario con datos obtenidos
+                binding.etCalle.setText(address.getThoroughfare() != null ?
+                        address.getThoroughfare() : "");
+                binding.etNumero.setText(address.getSubThoroughfare() != null ?
+                        address.getSubThoroughfare() : "");
+                binding.etColonia.setText(address.getSubLocality() != null ?
+                        address.getSubLocality() : "");
+                binding.etCiudad.setText(address.getLocality() != null ?
+                        address.getLocality() : "");
+                binding.etCodigoPostal.setText(address.getPostalCode() != null ?
+                        address.getPostalCode() : "");
+
+                // Crear sugerencia para etiqueta si está vacía
+                if (TextUtils.isEmpty(binding.etEtiqueta.getText())) {
+                    binding.etEtiqueta.setText("Casa");
+                }
+
+                Toast.makeText(requireContext(), "Dirección obtenida con éxito", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), "No se pudo obtener la dirección para estas coordenadas.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        } catch (IOException e) {
+            Log.e(TAG, "Error en geocodificación", e);
+            Toast.makeText(requireContext(), "Error al obtener dirección: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+        } finally {
+            binding.progressBar.setVisibility(View.GONE);
         }
     }
 
