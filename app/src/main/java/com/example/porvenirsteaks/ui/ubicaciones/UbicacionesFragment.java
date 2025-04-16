@@ -1,5 +1,6 @@
 package com.example.porvenirsteaks.ui.ubicaciones;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -37,6 +38,16 @@ public class UbicacionesFragment extends Fragment {
         setupRecyclerView();
         setupButtons();
         observeViewModel();
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Asegurarse que los fragmentos hijos (como AgregarUbicacionFragment) reciben el resultado
+        for (Fragment fragment : getChildFragmentManager().getFragments()) {
+            fragment.onActivityResult(requestCode, resultCode, data);
+        }
     }
 
     private void setupRecyclerView() {

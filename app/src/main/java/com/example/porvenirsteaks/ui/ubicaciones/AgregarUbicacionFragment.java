@@ -1,8 +1,13 @@
 package com.example.porvenirsteaks.ui.ubicaciones;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.location.Location;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -11,23 +16,37 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.DialogFragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.porvenirsteaks.data.model.Ubicacion;
 import com.example.porvenirsteaks.data.model.requests.UbicacionRequest;
 import com.example.porvenirsteaks.databinding.FragmentAgregarUbicacionBinding;
+import com.example.porvenirsteaks.utils.LocationPermissionHandler;
 import com.example.porvenirsteaks.utils.Resource;
+import com.google.android.gms.location.FusedLocationProviderClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.tasks.CancellationTokenSource;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
+    private static final String TAG = "AgregarUbicacionFrag";
     private FragmentAgregarUbicacionBinding binding;
     private UbicacionesViewModel viewModel;
     private Ubicacion ubicacionEditar;
     private static final String ARG_UBICACION = "ubicacion";
+
+    // Para obtener ubicación actual
+    private LocationPermissionHandler permissionHandler;
+    private FusedLocationProviderClient fusedLocationClient;
+    private CancellationTokenSource cancellationTokenSource;
+    private double currentLatitude = 0;
+    private double currentLongitude = 0;
 
     public static AgregarUbicacionFragment newInstance(Ubicacion ubicacion) {
         AgregarUbicacionFragment fragment = new AgregarUbicacionFragment();
@@ -65,11 +84,14 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
         }
     }
 
-
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setStyle(DialogFragment.STYLE_NORMAL, com.google.android.material.R.style.ThemeOverlay_MaterialComponents_Dialog_Alert);
+
+        // Inicializar el cliente de ubicación
+        fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
+        permissionHandler = new LocationPermissionHandler(requireActivity());
     }
 
     @Nullable
@@ -89,9 +111,16 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
             cargarDatosUbicacion();
             binding.tvTitleUbicacion.setText("Editar ubicación");
             binding.btnGuardar.setText("Actualizar");
+
+            // Si estamos editando, tomar las coordenadas guardadas como actuales
+            currentLatitude = ubicacionEditar.getLatitud();
+            currentLongitude = ubicacionEditar.getLongitud();
         } else {
             binding.tvTitleUbicacion.setText("Agregar ubicación");
             binding.btnGuardar.setText("Guardar");
+
+            // Si estamos agregando nueva ubicación, obtener coordenadas actuales
+            obtenerUbicacionActual();
         }
 
         // Configurar botones
@@ -104,9 +133,130 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
 
         // Configurar el botón de seleccionar ubicación en mapa
         binding.btnSelectOnMap.setOnClickListener(v -> {
-            // Aquí podrías abrir un MapFragment o una activity para seleccionar ubicación
-            Toast.makeText(requireContext(), "Funcionalidad de mapa no implementada", Toast.LENGTH_SHORT).show();
+            abrirSeleccionMapa();
         });
+    }
+
+    private void obtenerUbicacionActual() {
+        binding.progressBar.setVisibility(View.VISIBLE);
+
+        try {
+            if (ActivityCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(requireContext(),
+                            Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+                binding.progressBar.setVisibility(View.GONE);
+                Toast.makeText(requireContext(), "Se requieren permisos de ubicación",
+                        Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            FusedLocationProviderClient fusedLocationClient =
+                    LocationServices.getFusedLocationProviderClient(requireActivity());
+
+            fusedLocationClient.getLastLocation()
+                    .addOnSuccessListener(location -> {
+                        binding.progressBar.setVisibility(View.GONE);
+
+                        if (location != null) {
+                            currentLatitude = location.getLatitude();
+                            currentLongitude = location.getLongitude();
+                            Toast.makeText(requireContext(), "Ubicación actual obtenida",
+                                    Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "No se pudo obtener la ubicación actual. Intenta seleccionar en el mapa.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    })
+                    .addOnFailureListener(e -> {
+                        binding.progressBar.setVisibility(View.GONE);
+                        Toast.makeText(requireContext(),
+                                "Error al obtener ubicación: " + e.getMessage(),
+                                Toast.LENGTH_SHORT).show();
+                    });
+        } catch (Exception e) {
+            binding.progressBar.setVisibility(View.GONE);
+            Toast.makeText(requireContext(),
+                    "Error al obtener ubicación: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void obtenerCoordenadas() {
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                        PackageManager.PERMISSION_GRANTED) {
+            binding.progressBar.setVisibility(View.GONE);
+            return;
+        }
+
+        // Cancelar cualquier solicitud pendiente
+        if (cancellationTokenSource != null) {
+            cancellationTokenSource.cancel();
+        }
+
+        cancellationTokenSource = new CancellationTokenSource();
+
+        fusedLocationClient.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY,
+                        cancellationTokenSource.getToken())
+                .addOnSuccessListener(location -> {
+                    binding.progressBar.setVisibility(View.GONE);
+
+                    if (location != null) {
+                        // Guardar la ubicación
+                        currentLatitude = location.getLatitude();
+                        currentLongitude = location.getLongitude();
+
+                        Log.d(TAG, "Ubicación obtenida: " + currentLatitude + ", " + currentLongitude);
+
+                        // Mostrar coordenadas en algún lugar (opcional)
+                        Toast.makeText(requireContext(), "Coordenadas actualizadas", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), "No se pudo obtener ubicación actual",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    binding.progressBar.setVisibility(View.GONE);
+                    Log.e(TAG, "Error obteniendo ubicación", e);
+                    Toast.makeText(requireContext(), "Error al obtener ubicación: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    private void abrirSeleccionMapa() {
+        try {
+            Intent intent = new Intent(requireContext(), MapaUbicacionActivity.class);
+            // Pasar las coordenadas actuales (si existen)
+            if (currentLatitude != 0 || currentLongitude != 0) {
+                intent.putExtra("latitude", currentLatitude);
+                intent.putExtra("longitude", currentLongitude);
+            }
+            startActivityForResult(intent, 1001);
+        } catch (Exception e) {
+            Log.e(TAG, "Error al abrir el mapa: " + e.getMessage());
+            Toast.makeText(requireContext(), "No se pudo abrir el mapa: " + e.getMessage(),
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        // Procesar resultado de selección de mapa
+        if (requestCode == 1001 && data != null) {
+            // Actualizar coordenadas si se devuelven del mapa
+            if (data.hasExtra("latitude") && data.hasExtra("longitude")) {
+                currentLatitude = data.getDoubleExtra("latitude", 0);
+                currentLongitude = data.getDoubleExtra("longitude", 0);
+
+                Toast.makeText(requireContext(), "Ubicación seleccionada en mapa", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void cargarDatosUbicacion() {
@@ -181,6 +331,13 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
             binding.tilCiudad.setError(null);
         }
 
+        // Validar si tenemos coordenadas
+        if (currentLatitude == 0 && currentLongitude == 0) {
+            Toast.makeText(requireContext(), "No se han obtenido coordenadas de ubicación",
+                    Toast.LENGTH_SHORT).show();
+            valido = false;
+        }
+
         return valido;
     }
 
@@ -194,11 +351,10 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
                 binding.etColonia.getText().toString().trim() + ", " +
                 binding.etCiudad.getText().toString().trim();
 
-        // Crear la solicitud
+        // Crear la solicitud con coordenadas actuales
         UbicacionRequest request = new UbicacionRequest(
-                // Mantener las coordenadas originales si estamos editando
-                ubicacionEditar != null ? ubicacionEditar.getLatitud() : 0,
-                ubicacionEditar != null ? ubicacionEditar.getLongitud() : 0,
+                currentLatitude, // Usar las coordenadas actuales
+                currentLongitude, // Usar las coordenadas actuales
                 direccionCompleta,
                 binding.etCalle.getText().toString().trim(),
                 binding.etNumero.getText().toString().trim(),
@@ -249,6 +405,9 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        if (cancellationTokenSource != null) {
+            cancellationTokenSource.cancel();
+        }
         binding = null;
     }
 }

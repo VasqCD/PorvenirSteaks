@@ -13,11 +13,8 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-        <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-
-
 
     <application
         android:enableOnBackInvokedCallback="true"
@@ -33,16 +30,21 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="31">
 
+        <!-- Meta-data para Google Maps API Key -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="@string/google_maps_key" />
+
         <activity
             android:name=".SplashActivity"
             android:exported="true"
             android:theme="@style/Theme.PorvenirSteaks.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity
             android:name=".ui.auth.LoginActivity"
             android:exported="false"
@@ -73,6 +75,11 @@
 
         <activity
             android:name=".ui.ubicaciones.CompleteAddressActivity"
+            android:exported="false"
+            android:theme="@style/Theme.PorvenirSteaks.NoActionBar" />
+
+        <activity
+            android:name=".ui.ubicaciones.MapaUbicacionActivity"
             android:exported="false"
             android:theme="@style/Theme.PorvenirSteaks.NoActionBar" />
 
