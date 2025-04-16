@@ -1,11 +1,9 @@
 package com.example.porvenirsteaks.ui.ubicaciones;
 
 import android.app.Application;
-
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
-
 import com.example.porvenirsteaks.data.model.Ubicacion;
 import com.example.porvenirsteaks.data.model.requests.UbicacionRequest;
 import com.example.porvenirsteaks.data.repository.UbicacionRepository;
@@ -23,6 +21,10 @@ public class UbicacionesViewModel extends AndroidViewModel {
 
     public LiveData<Resource<List<Ubicacion>>> getUbicaciones() {
         return repository.getUbicaciones();
+    }
+
+    public void refreshUbicaciones() {
+        repository.fetchUbicaciones();
     }
 
     public LiveData<Resource<Ubicacion>> createUbicacion(UbicacionRequest request) {

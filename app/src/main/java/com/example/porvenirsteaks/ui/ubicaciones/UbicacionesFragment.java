@@ -114,8 +114,7 @@ public class UbicacionesFragment extends Fragment {
     }
 
     public void cargarUbicaciones() {
-        // Recargar las ubicaciones
-        viewModel.getUbicaciones();
+        viewModel.refreshUbicaciones();
     }
 
     @Override

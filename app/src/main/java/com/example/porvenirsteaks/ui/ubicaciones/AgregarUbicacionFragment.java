@@ -1,6 +1,7 @@
 package com.example.porvenirsteaks.ui.ubicaciones;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
@@ -19,6 +20,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.DialogFragment;
+import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.porvenirsteaks.data.model.Ubicacion;
@@ -253,42 +255,17 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     }
 
     private void abrirSeleccionMapa() {
-        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_coordenadas, null);
+        // Crear intent para abrir MapaUbicacionActivity
+        Intent intent = new Intent(requireContext(), MapaUbicacionActivity.class);
 
-        EditText etLatitud = view.findViewById(R.id.etLatitud);
-        EditText etLongitud = view.findViewById(R.id.etLongitud);
-
-        // Llenar con valores actuales si existen
+        // Pasar coordenadas actuales si existen
         if (currentLatitude != 0 || currentLongitude != 0) {
-            etLatitud.setText(String.valueOf(currentLatitude));
-            etLongitud.setText(String.valueOf(currentLongitude));
+            intent.putExtra("latitude", currentLatitude);
+            intent.putExtra("longitude", currentLongitude);
         }
 
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle("Ingresar coordenadas")
-                .setView(view)
-                .setPositiveButton("Aceptar", (dialog, which) -> {
-                    try {
-                        double lat = Double.parseDouble(etLatitud.getText().toString());
-                        double lng = Double.parseDouble(etLongitud.getText().toString());
-
-                        // Validar rango de coordenadas
-                        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                            currentLatitude = lat;
-                            currentLongitude = lng;
-                            Toast.makeText(requireContext(),
-                                    "Coordenadas actualizadas", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(requireContext(),
-                                    "Coordenadas fuera de rango", Toast.LENGTH_SHORT).show();
-                        }
-                    } catch (NumberFormatException e) {
-                        Toast.makeText(requireContext(),
-                                "Por favor ingresa valores numéricos válidos", Toast.LENGTH_SHORT).show();
-                    }
-                })
-                .setNegativeButton("Cancelar", null)
-                .show();
+        // Iniciar la actividad esperando resultado
+        startActivityForResult(intent, 1001);
     }
 
     @Override
@@ -296,7 +273,7 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
         super.onActivityResult(requestCode, resultCode, data);
 
         // Procesar resultado de selección de mapa
-        if (requestCode == 1001 && data != null) {
+        if (requestCode == 1001 && resultCode == Activity.RESULT_OK && data != null) {
             // Actualizar coordenadas si se devuelven del mapa
             if (data.hasExtra("latitude") && data.hasExtra("longitude")) {
                 currentLatitude = data.getDoubleExtra("latitude", 0);
@@ -435,12 +412,14 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
             Toast.makeText(requireContext(),
                     ubicacionEditar != null ? "Ubicación actualizada" : "Ubicación guardada",
                     Toast.LENGTH_SHORT).show();
-            dismiss();
 
             // Recargar las ubicaciones en el fragmento principal
-            if (getParentFragment() instanceof UbicacionesFragment) {
-                ((UbicacionesFragment) getParentFragment()).cargarUbicaciones();
+            Fragment parentFragment = getParentFragment();
+            if (parentFragment instanceof UbicacionesFragment) {
+                ((UbicacionesFragment) parentFragment).cargarUbicaciones();
             }
+
+            dismiss();
         } else if (result.status == Resource.Status.ERROR) {
             new MaterialAlertDialogBuilder(requireContext())
                     .setTitle("Error")
