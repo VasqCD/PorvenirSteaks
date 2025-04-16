@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -33,6 +34,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.example.porvenirsteaks.R;
 
 public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     private static final String TAG = "AgregarUbicacionFrag";
@@ -91,7 +93,9 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
 
         // Inicializar el cliente de ubicación
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity());
-        permissionHandler = new LocationPermissionHandler(requireActivity());
+
+        // Usamos una forma más simple de verificar permisos sin el handler
+        // permissionHandler = new LocationPermissionHandler(requireActivity());
     }
 
     @Nullable
@@ -140,47 +144,68 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     private void obtenerUbicacionActual() {
         binding.progressBar.setVisibility(View.VISIBLE);
 
-        try {
-            if (ActivityCompat.checkSelfPermission(requireContext(),
-                    Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(requireContext(),
-                            Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        // Verificar permisos de manera más directa
+        if (ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) !=
+                PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) !=
+                        PackageManager.PERMISSION_GRANTED) {
 
-                binding.progressBar.setVisibility(View.GONE);
-                Toast.makeText(requireContext(), "Se requieren permisos de ubicación",
-                        Toast.LENGTH_SHORT).show();
-                return;
+            // Sin permisos
+            binding.progressBar.setVisibility(View.GONE);
+            Toast.makeText(requireContext(), "Se requieren permisos de ubicación", Toast.LENGTH_SHORT).show();
+
+            // Solicitar los permisos directamente desde el fragmento
+            requestPermissions(new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+            }, 1000);
+
+            return;
+        }
+
+        // Con permisos, obtener ubicación
+        fusedLocationClient.getLastLocation()
+                .addOnSuccessListener(location -> {
+                    binding.progressBar.setVisibility(View.GONE);
+
+                    if (location != null) {
+                        currentLatitude = location.getLatitude();
+                        currentLongitude = location.getLongitude();
+                        Toast.makeText(requireContext(), "Ubicación actual obtenida", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(),
+                                "No se pudo obtener la ubicación actual. Intenta seleccionar en el mapa.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    binding.progressBar.setVisibility(View.GONE);
+                    Toast.makeText(requireContext(),
+                            "Error al obtener ubicación: " + e.getMessage(),
+                            Toast.LENGTH_SHORT).show();
+                });
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == 1000) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
             }
 
-            FusedLocationProviderClient fusedLocationClient =
-                    LocationServices.getFusedLocationProviderClient(requireActivity());
-
-            fusedLocationClient.getLastLocation()
-                    .addOnSuccessListener(location -> {
-                        binding.progressBar.setVisibility(View.GONE);
-
-                        if (location != null) {
-                            currentLatitude = location.getLatitude();
-                            currentLongitude = location.getLongitude();
-                            Toast.makeText(requireContext(), "Ubicación actual obtenida",
-                                    Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(requireContext(),
-                                    "No se pudo obtener la ubicación actual. Intenta seleccionar en el mapa.",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    })
-                    .addOnFailureListener(e -> {
-                        binding.progressBar.setVisibility(View.GONE);
-                        Toast.makeText(requireContext(),
-                                "Error al obtener ubicación: " + e.getMessage(),
-                                Toast.LENGTH_SHORT).show();
-                    });
-        } catch (Exception e) {
-            binding.progressBar.setVisibility(View.GONE);
-            Toast.makeText(requireContext(),
-                    "Error al obtener ubicación: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
+            if (allGranted) {
+                obtenerUbicacionActual();
+            } else {
+                Toast.makeText(requireContext(),
+                        "Necesitas conceder permisos de ubicación para esta funcionalidad",
+                        Toast.LENGTH_LONG).show();
+            }
         }
     }
 
@@ -228,19 +253,42 @@ public class AgregarUbicacionFragment extends BottomSheetDialogFragment {
     }
 
     private void abrirSeleccionMapa() {
-        try {
-            Intent intent = new Intent(requireContext(), MapaUbicacionActivity.class);
-            // Pasar las coordenadas actuales (si existen)
-            if (currentLatitude != 0 || currentLongitude != 0) {
-                intent.putExtra("latitude", currentLatitude);
-                intent.putExtra("longitude", currentLongitude);
-            }
-            startActivityForResult(intent, 1001);
-        } catch (Exception e) {
-            Log.e(TAG, "Error al abrir el mapa: " + e.getMessage());
-            Toast.makeText(requireContext(), "No se pudo abrir el mapa: " + e.getMessage(),
-                    Toast.LENGTH_SHORT).show();
+        View view = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_coordenadas, null);
+
+        EditText etLatitud = view.findViewById(R.id.etLatitud);
+        EditText etLongitud = view.findViewById(R.id.etLongitud);
+
+        // Llenar con valores actuales si existen
+        if (currentLatitude != 0 || currentLongitude != 0) {
+            etLatitud.setText(String.valueOf(currentLatitude));
+            etLongitud.setText(String.valueOf(currentLongitude));
         }
+
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Ingresar coordenadas")
+                .setView(view)
+                .setPositiveButton("Aceptar", (dialog, which) -> {
+                    try {
+                        double lat = Double.parseDouble(etLatitud.getText().toString());
+                        double lng = Double.parseDouble(etLongitud.getText().toString());
+
+                        // Validar rango de coordenadas
+                        if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                            currentLatitude = lat;
+                            currentLongitude = lng;
+                            Toast.makeText(requireContext(),
+                                    "Coordenadas actualizadas", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(requireContext(),
+                                    "Coordenadas fuera de rango", Toast.LENGTH_SHORT).show();
+                        }
+                    } catch (NumberFormatException e) {
+                        Toast.makeText(requireContext(),
+                                "Por favor ingresa valores numéricos válidos", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .setNegativeButton("Cancelar", null)
+                .show();
     }
 
     @Override

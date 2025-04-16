@@ -54,23 +54,37 @@ public class LocationPermissionHandler {
     public static final String NOTIFICATION_PERMISSION =
             Manifest.permission.POST_NOTIFICATIONS;
 
-    private final FragmentActivity activity;
+    private final Activity activity;
     private Consumer<Boolean> permissionCallback;
     private ActivityResultLauncher<String[]> requestPermissionLauncher;
     private ActivityResultLauncher<Intent> appSettingsLauncher;
+    private boolean isFragmentHandler = false;
+
+    public LocationPermissionHandler(Activity activity) {
+        this.activity = activity;
+        this.isFragmentHandler = false;
+        // No inicializamos launchers aquí
+    }
 
     public LocationPermissionHandler(FragmentActivity activity) {
         this.activity = activity;
+        this.isFragmentHandler = activity instanceof FragmentActivity;
 
-        // Inicializar launcher para solicitud de permisos
-        this.requestPermissionLauncher = activity.registerForActivityResult(
-                new ActivityResultContracts.RequestMultiplePermissions(),
-                this::handlePermissionResult);
+        // Solo inicializar launchers si es una actividad, no en un fragmento
+        if (!isFragmentHandler) {
+            try {
+                FragmentActivity fragmentActivity = (FragmentActivity) activity;
+                this.requestPermissionLauncher = fragmentActivity.registerForActivityResult(
+                        new ActivityResultContracts.RequestMultiplePermissions(),
+                        this::handlePermissionResult);
 
-        // Inicializar launcher para configuración de la aplicación
-        this.appSettingsLauncher = activity.registerForActivityResult(
-                new ActivityResultContracts.StartActivityForResult(),
-                result -> checkLocationPermission(permissionCallback));
+                this.appSettingsLauncher = fragmentActivity.registerForActivityResult(
+                        new ActivityResultContracts.StartActivityForResult(),
+                        result -> checkLocationPermission(permissionCallback));
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "Error al registrar launchers: " + e.getMessage());
+            }
+        }
     }
 
     /**
@@ -93,7 +107,16 @@ public class LocationPermissionHandler {
             }
         } else {
             // Solicitar permisos de ubicación
-            requestLocationPermissions();
+            if (requestPermissionLauncher != null) {
+                // Usar launcher si está disponible
+                requestPermissionLauncher.launch(LOCATION_PERMISSIONS);
+            } else {
+                // Usar método tradicional si el launcher no está disponible
+                ActivityCompat.requestPermissions(
+                        activity,
+                        LOCATION_PERMISSIONS,
+                        LOCATION_PERMISSION_REQUEST_CODE);
+            }
         }
     }
 
@@ -141,14 +164,6 @@ public class LocationPermissionHandler {
         return locationManager != null &&
                 (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
                         locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER));
-    }
-
-    /**
-     * Solicita los permisos de ubicación.
-     */
-    private void requestLocationPermissions() {
-        // Usar el launcher para solicitar permisos
-        requestPermissionLauncher.launch(LOCATION_PERMISSIONS);
     }
 
     /**
@@ -242,7 +257,10 @@ public class LocationPermissionHandler {
                         "pedidos correctamente. Sin este permiso, no podrás utilizar " +
                         "algunas funciones de la aplicación.")
                 .setPositiveButton("Solicitar de nuevo", (dialog, which) -> {
-                    requestLocationPermissions();
+                    ActivityCompat.requestPermissions(
+                            activity,
+                            LOCATION_PERMISSIONS,
+                            LOCATION_PERMISSION_REQUEST_CODE);
                 })
                 .setNegativeButton("Cancelar", (dialog, which) -> {
                     if (permissionCallback != null) {
@@ -297,7 +315,12 @@ public class LocationPermissionHandler {
         Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
         Uri uri = Uri.fromParts("package", activity.getPackageName(), null);
         intent.setData(uri);
-        appSettingsLauncher.launch(intent);
+
+        if (appSettingsLauncher != null) {
+            appSettingsLauncher.launch(intent);
+        } else {
+            activity.startActivity(intent);
+        }
     }
 
     /**
