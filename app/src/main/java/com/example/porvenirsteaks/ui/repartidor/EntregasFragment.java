@@ -40,6 +40,10 @@ public class EntregasFragment extends Fragment {
 
         // Iniciar la ubicación del repartidor
         viewModel.iniciarActualizacionUbicacion(requireContext());
+
+        // Asegurar que se carguen los datos inicialmente
+        binding.progressBar.setVisibility(View.VISIBLE);
+        viewModel.cargarEntregas();
     }
 
     private void setupRecyclerView() {
@@ -73,11 +77,16 @@ public class EntregasFragment extends Fragment {
 
                 // Mostrar mensaje de vacío si no hay entregas
                 binding.tvEmptyState.setVisibility(result.data.isEmpty() ? View.VISIBLE : View.GONE);
+                binding.lottieEmptyState.setVisibility(result.data.isEmpty() ? View.VISIBLE : View.GONE);
                 binding.recyclerViewEntregas.setVisibility(result.data.isEmpty() ? View.GONE : View.VISIBLE);
             } else if (result.status == Resource.Status.ERROR) {
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_SHORT).show();
                 binding.tvEmptyState.setVisibility(View.VISIBLE);
+                binding.lottieEmptyState.setVisibility(View.VISIBLE);
                 binding.recyclerViewEntregas.setVisibility(View.GONE);
+
+                // Mostrar mensaje de error específico
+                binding.tvEmptyState.setText("No se pudieron cargar las entregas: " + result.message);
             }
         });
     }
