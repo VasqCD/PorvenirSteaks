@@ -142,23 +142,23 @@ public class HomeFragment extends Fragment implements BannerAdapter.OnBannerClic
 
     private void setupUIForRole(String userRole) {
         // Ocultar todas las vistas específicas de rol
-        binding.layoutCliente.setVisibility(View.GONE);
-        binding.layoutRepartidor.setVisibility(View.GONE);
-        binding.layoutAdmin.setVisibility(View.GONE);
+        binding.layoutCliente.getRoot().setVisibility(View.GONE);
+        binding.layoutRepartidor.getRoot().setVisibility(View.GONE);
+        binding.layoutAdmin.getRoot().setVisibility(View.GONE);
 
         // Mostrar la vista según el rol
         switch (userRole) {
             case Constants.ROL_CLIENTE:
                 setupClienteUI();
-                binding.layoutCliente.setVisibility(View.VISIBLE);
+                binding.layoutCliente.getRoot().setVisibility(View.VISIBLE);
                 break;
             case Constants.ROL_REPARTIDOR:
                 setupRepartidorUI();
-                binding.layoutRepartidor.setVisibility(View.VISIBLE);
+                binding.layoutRepartidor.getRoot().setVisibility(View.VISIBLE);
                 break;
             case Constants.ROL_ADMINISTRADOR:
                 setupAdminUI();
-                binding.layoutAdmin.setVisibility(View.VISIBLE);
+                binding.layoutAdmin.getRoot().setVisibility(View.VISIBLE);
                 break;
         }
     }
