@@ -458,6 +458,15 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
+        // Ocultar el carrito según el rol
+        String userRole = UserManager.getUserRole(this);
+        if (Constants.ROL_REPARTIDOR.equals(userRole) || Constants.ROL_ADMINISTRADOR.equals(userRole)) {
+            MenuItem itemCarrito = menu.findItem(R.id.action_cart);
+            if (itemCarrito != null) {
+                itemCarrito.setVisible(false);
+            }
+        }
+
         return true;
     }
 
