@@ -29,8 +29,9 @@ public class PedidoRepository {
     private static final String TAG = "PedidoRepository";
 
     public PedidoRepository(Context context) {
-        apiService = RetrofitClient.getClient(TokenManager.getToken(context))
-                .create(ApiService.class);
+        this.context = context;
+        String token = TokenManager.getToken(context);
+        this.apiService = RetrofitClient.getClient(token).create(ApiService.class);
     }
 
     public LiveData<Resource<List<Pedido>>> getPedidos() {
@@ -129,22 +130,42 @@ public class PedidoRepository {
         return result;
     }
 
+    /**
+     * Obtiene los pedidos pendientes para repartidores
+     */
     public LiveData<Resource<List<Pedido>>> getPedidosPendientes() {
         MutableLiveData<Resource<List<Pedido>>> result = new MutableLiveData<>();
         result.setValue(Resource.loading(null));
+
+        if (!NetworkUtils.isNetworkAvailable(context)) {
+            result.setValue(Resource.error("No hay conexión a internet", null));
+            return result;
+        }
 
         apiService.getPedidosPendientes().enqueue(new Callback<List<Pedido>>() {
             @Override
             public void onResponse(Call<List<Pedido>> call, Response<List<Pedido>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     result.setValue(Resource.success(response.body()));
+                    Log.d(TAG, "Pedidos pendientes obtenidos: " + response.body().size());
                 } else {
-                    result.setValue(Resource.error("Error al obtener pedidos pendientes", null));
+                    String errorMsg = "Error al obtener pedidos pendientes: ";
+                    try {
+                        errorMsg += response.errorBody() != null ?
+                                response.errorBody().string() :
+                                response.message();
+                    } catch (Exception e) {
+                        errorMsg += response.message();
+                    }
+
+                    Log.e(TAG, errorMsg + " Código: " + response.code());
+                    result.setValue(Resource.error(errorMsg, null));
                 }
             }
 
             @Override
             public void onFailure(Call<List<Pedido>> call, Throwable t) {
+                Log.e(TAG, "Error de conexión al obtener pedidos pendientes", t);
                 result.setValue(Resource.error("Error de conexión: " + t.getMessage(), null));
             }
         });

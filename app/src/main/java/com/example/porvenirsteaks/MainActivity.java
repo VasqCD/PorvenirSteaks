@@ -71,8 +71,15 @@ public class MainActivity extends AppCompatActivity {
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         super.onCreate(savedInstanceState);
 
-        // Inicializar Firebase
-        FirebaseApp.initializeApp(this);
+        try {
+            // Inicializar Firebase solo si no está inicializado
+            if (FirebaseApp.getApps(this).isEmpty()) {
+                FirebaseApp.initializeApp(this);
+                Log.d(TAG, "Firebase inicializado correctamente");
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error al inicializar Firebase: " + e.getMessage());
+        }
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
@@ -137,7 +144,7 @@ public class MainActivity extends AppCompatActivity {
 
                     // Verificar si hay un usuario autenticado
                     if (TokenManager.hasToken(this)) {
-                        // Registrar el token en el servidor
+                        // Registrar o actualizar el token en el servidor
                         Map<String, String> request = new HashMap<>();
                         request.put("token", token);
                         request.put("device_type", "android");
@@ -151,6 +158,24 @@ public class MainActivity extends AppCompatActivity {
                                         if (response.isSuccessful()) {
                                             Log.d("FCM", "Token FCM registrado exitosamente en el servidor");
                                         } else {
+                                            // Si es error 500 con duplicado de token, no es un problema real
+                                            if (response.code() == 500) {
+                                                String errorBody = "";
+                                                try {
+                                                    if (response.errorBody() != null) {
+                                                        errorBody = response.errorBody().string();
+                                                    }
+                                                } catch (Exception e) {
+                                                    Log.e("FCM", "Error al leer errorBody", e);
+                                                }
+
+                                                if (errorBody.contains("Duplicate entry") && errorBody.contains("fcm_tokens_token_unique")) {
+                                                    Log.d("FCM", "El token ya está registrado para este usuario (esto es normal)");
+                                                    // El token ya está registrado, es normal, no hacemos nada
+                                                    return;
+                                                }
+                                            }
+
                                             Log.e("FCM", "Error al registrar token FCM: " + response.code());
                                         }
                                     }

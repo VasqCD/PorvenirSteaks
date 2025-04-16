@@ -66,11 +66,34 @@ public class EntregasAdapter extends ListAdapter<Pedido, EntregasAdapter.Entrega
             binding.tvPedidoId.setText("Pedido #" + pedido.getId());
             binding.tvTotal.setText(currencyFormatter.format(pedido.getTotal()));
 
-            // Cliente info
+            // Cliente info con manejo seguro de nulos
             if (pedido.getUsuario() != null) {
-                binding.tvClienteNombre.setText(pedido.getUsuario().getName() + " " +
-                        (pedido.getUsuario().getApellido() != null ? pedido.getUsuario().getApellido() : ""));
-                binding.tvClienteTelefono.setText(pedido.getUsuario().getTelefono());
+                // Nombre completo
+                StringBuilder nombreCompleto = new StringBuilder();
+
+                if (pedido.getUsuario().getName() != null && !pedido.getUsuario().getName().isEmpty()) {
+                    nombreCompleto.append(pedido.getUsuario().getName());
+                }
+
+                if (pedido.getUsuario().getApellido() != null && !pedido.getUsuario().getApellido().isEmpty()) {
+                    if (nombreCompleto.length() > 0) {
+                        nombreCompleto.append(" ");
+                    }
+                    nombreCompleto.append(pedido.getUsuario().getApellido());
+                }
+
+                if (nombreCompleto.length() == 0) {
+                    nombreCompleto.append("Cliente #").append(pedido.getUsuarioId());
+                }
+
+                binding.tvClienteNombre.setText(nombreCompleto.toString());
+
+                // Teléfono
+                String telefono = pedido.getUsuario().getTelefono();
+                binding.tvClienteTelefono.setText(telefono != null && !telefono.isEmpty() ? telefono : "Sin teléfono");
+            } else {
+                binding.tvClienteNombre.setText("Cliente no disponible");
+                binding.tvClienteTelefono.setText("Sin teléfono");
             }
 
             // Formatear fecha
