@@ -10,8 +10,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.example.porvenirsteaks.R;
 import com.example.porvenirsteaks.data.model.CartItem;
 import com.example.porvenirsteaks.data.model.Ubicacion;
 import com.example.porvenirsteaks.databinding.FragmentCarritoBinding;
@@ -20,6 +23,7 @@ import com.example.porvenirsteaks.ui.ubicaciones.UbicacionesDialogFragment;
 import com.example.porvenirsteaks.utils.Resource;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -47,7 +51,33 @@ public class CarritoFragment extends Fragment implements UbicacionesDialogFragme
         setupRecyclerView();
         setupButtons();
         observeViewModel();
+
+        // Check for saved location
+        loadUbicaciones();
     }
+
+    private void loadUbicaciones() {
+        viewModel.getUbicaciones().observe(getViewLifecycleOwner(), result -> {
+            if (result.status == Resource.Status.SUCCESS && result.data != null && !result.data.isEmpty()) {
+                // Display the first location as default if none is selected
+                if (ubicacionSeleccionada == null && !result.data.isEmpty()) {
+                    ubicacionSeleccionada = result.data.get(0);
+                    onUbicacionSeleccionada(ubicacionSeleccionada);
+                }
+            }
+        });
+    }
+
+    private void displayUbicacion(Ubicacion ubicacion) {
+        if (ubicacion != null) {
+            binding.tvUbicacionSeleccionada.setText(ubicacion.getDireccionCompleta());
+            binding.tvUbicacionSeleccionada.setVisibility(View.VISIBLE);
+        } else {
+            binding.tvUbicacionSeleccionada.setText("No se ha seleccionado dirección");
+        }
+    }
+
+
 
     private void setupRecyclerView() {
         adapter = new CarritoAdapter(
@@ -98,7 +128,7 @@ public class CarritoFragment extends Fragment implements UbicacionesDialogFragme
             binding.layoutEmptyCart.setVisibility(View.GONE);
             binding.layoutCartContent.setVisibility(View.VISIBLE);
 
-            adapter.submitList(items);
+            adapter.submitList(new ArrayList<>(items));
 
             // Actualizar total
             double total = viewModel.getTotal();
@@ -118,7 +148,12 @@ public class CarritoFragment extends Fragment implements UbicacionesDialogFragme
                 Toast.makeText(requireContext(), "¡Pedido realizado con éxito!", Toast.LENGTH_LONG).show();
 
                 // Navegar al detalle del pedido
-                // navController.navigate(R.id.action_carritoFragment_to_detallePedidoFragment, args);
+                Bundle args = new Bundle();
+                args.putInt("pedido_id", result.data.getId());
+
+                // Obtener NavController desde la vista actual
+                NavController navController = Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_content_main);
+                navController.navigate(R.id.detallePedidoFragment, args);
 
             } else if (result.status == Resource.Status.ERROR) {
                 Toast.makeText(requireContext(), "Error: " + result.message, Toast.LENGTH_LONG).show();
@@ -131,6 +166,8 @@ public class CarritoFragment extends Fragment implements UbicacionesDialogFragme
         this.ubicacionSeleccionada = ubicacion;
         binding.tvUbicacionSeleccionada.setText(ubicacion.getDireccionCompleta());
         binding.tvUbicacionSeleccionada.setVisibility(View.VISIBLE);
+
+        // Optional: You can also update any visual indicators to show this is the selected location
     }
 
     @Override

@@ -10,7 +10,9 @@
         android:id="@+id/layoutCartContent"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:visibility="visible">
+        android:visibility="visible"
+        tools:layout_editor_absoluteX="16dp"
+        tools:layout_editor_absoluteY="73dp">
 
         <TextView
             android:id="@+id/tvTitleCarrito"
@@ -25,6 +27,18 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
+        <!-- Location CardView for the cart -->
+        <androidx.cardview.widget.CardView
+            android:id="@+id/cardViewUbicacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="8dp"
+            app:cardCornerRadius="8dp"
+            app:cardElevation="4dp">
+
+        </androidx.cardview.widget.CardView>
+
+
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewCarrito"
             android:layout_width="match_parent"
@@ -34,7 +48,9 @@
             android:padding="8dp"
             app:layout_constraintBottom_toTopOf="@+id/cardViewResumen"
             app:layout_constraintTop_toBottomOf="@+id/tvTitleCarrito"
+            app:layout_constraintVertical_bias="0.0"
             tools:itemCount="3"
+            tools:layout_editor_absoluteX="0dp"
             tools:listitem="@layout/item_carrito" />
 
         <com.google.android.material.card.MaterialCardView
@@ -44,86 +60,120 @@
             app:cardElevation="8dp"
             app:layout_constraintBottom_toBottomOf="parent">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+        </com.google.android.material.card.MaterialCardView>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp"
+            app:layout_constraintBottom_toTopOf="@+id/constraintLayout2"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.967"
+            tools:layout_editor_absoluteX="8dp">
+
+            <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:padding="16dp">
+                android:text="Dirección de entrega"
+                android:textSize="16sp"
+                android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvTotalLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Total:"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    app:layout_constraintBottom_toBottomOf="@+id/tvTotal"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="@+id/tvTotal" />
+            <TextView
+                android:id="@+id/tvUbicacionSeleccionada"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="No se ha seleccionado dirección"
+                android:textSize="14sp"
+                tools:ignore="DuplicateIds" />
 
-                <TextView
-                    android:id="@+id/tvTotal"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:textColor="@color/primary"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    app:layout_constraintStart_toEndOf="@+id/tvTotalLabel"
-                    app:layout_constraintTop_toTopOf="parent"
-                    tools:text="L. 950.00" />
+            <Button
+                android:id="@+id/btnSeleccionarUbicacion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Seleccionar ubicación" />
+        </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvUbicacionLabel"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Dirección de entrega:"
-                    android:textColor="@color/text_primary"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/tvTotal" />
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/constraintLayout2"
+            android:layout_width="388dp"
+            android:layout_height="89dp"
+            android:padding="16dp"
+            app:layout_constraintBottom_toTopOf="@+id/btnRealizarPedido"
+            tools:layout_editor_absoluteX="11dp">
 
-                <TextView
-                    android:id="@+id/tvUbicacionSeleccionada"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:layout_marginEnd="8dp"
-                    android:textColor="@color/text_primary"
-                    android:textStyle="bold"
-                    android:visibility="gone"
-                    app:layout_constraintEnd_toStartOf="@+id/btnSeleccionarUbicacion"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/tvUbicacionLabel"
-                    tools:text="Calle Principal #123, Colonia Centro, Tegucigalpa"
-                    tools:visibility="visible" />
+            <TextView
+                android:id="@+id/tvTotalLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Total:"
+                android:textColor="@color/text_primary"
+                android:textSize="18sp"
+                app:layout_constraintBottom_toBottomOf="@+id/tvTotal"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="@+id/tvTotal" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnSeleccionarUbicacion"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Seleccionar"
-                    android:textColor="@color/primary"
-                    app:layout_constraintBottom_toBottomOf="@+id/tvUbicacionSeleccionada"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="@+id/tvUbicacionLabel"
-                    app:strokeColor="@color/primary" />
+            <TextView
+                android:id="@+id/tvTotal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="@color/primary"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                app:layout_constraintStart_toEndOf="@+id/tvTotalLabel"
+                app:layout_constraintTop_toTopOf="parent"
+                tools:text="L. 950.00" />
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnRealizarPedido"
-                    style="@style/Theme.PorvenirSteaks.Button"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
-                    android:text="Realizar Pedido"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@+id/tvUbicacionSeleccionada" />
+            <TextView
+                android:id="@+id/tvUbicacionLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="Dirección de entrega:"
+                android:textColor="@color/text_primary"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/tvTotal" />
 
-            </androidx.constraintlayout.widget.ConstraintLayout>
+            <!--                <TextView-->
+            <!--                    android:id="@+id/tvUbicacionSeleccionada"-->
+            <!--                    android:layout_width="0dp"-->
+            <!--                    android:layout_height="wrap_content"-->
+            <!--                    android:layout_marginTop="4dp"-->
+            <!--                    android:layout_marginEnd="8dp"-->
+            <!--                    android:textColor="@color/text_primary"-->
+            <!--                    android:textStyle="bold"-->
+            <!--                    android:visibility="gone"-->
+            <!--                    app:layout_constraintEnd_toStartOf="@+id/btnSeleccionarUbicacion"-->
+            <!--                    app:layout_constraintStart_toStartOf="parent"-->
+            <!--                    app:layout_constraintTop_toBottomOf="@+id/tvUbicacionLabel"-->
+            <!--                    tools:text="Calle Principal #123, Colonia Centro, Tegucigalpa"-->
+            <!--                    tools:visibility="visible" />-->
 
-        </com.google.android.material.card.MaterialCardView>
+            <!--                <com.google.android.material.button.MaterialButton-->
+            <!--                    android:id="@+id/btnSeleccionarUbicacion"-->
+            <!--                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"-->
+            <!--                    android:layout_width="wrap_content"-->
+            <!--                    android:layout_height="wrap_content"-->
+            <!--                    android:text="Seleccionar"-->
+            <!--                    android:textColor="@color/primary"-->
+            <!--                    app:layout_constraintBottom_toBottomOf="@+id/tvUbicacionSeleccionada"-->
+            <!--                    app:layout_constraintEnd_toEndOf="parent"-->
+            <!--                    app:layout_constraintTop_toTopOf="@+id/tvUbicacionLabel"-->
+            <!--                    app:strokeColor="@color/primary" />-->
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnRealizarPedido"
+            style="@style/Theme.PorvenirSteaks.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Realizar Pedido"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:layout_editor_absoluteX="0dp" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

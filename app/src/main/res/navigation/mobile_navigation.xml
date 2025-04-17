@@ -26,6 +26,9 @@
         android:name="com.example.porvenirsteaks.ui.productos.DetalleProductoFragment"
         android:label="Detalle del Producto"
         tools:layout="@layout/fragment_detalle_producto">
+        <action
+            android:id="@+id/action_productosFragment_to_detalleProductoFragment"
+            app:destination="@id/detalleProductoFragment" />
         <argument
             android:name="producto_id"
             app:argType="integer" />
@@ -36,6 +39,9 @@
         android:name="com.example.porvenirsteaks.ui.carrito.CarritoFragment"
         android:label="Carrito"
         tools:layout="@layout/fragment_carrito" />
+    <action
+        android:id="@+id/action_carritoFragment_to_detallePedidoFragment"
+        app:destination="@id/detallePedidoFragment" />
 
     <fragment
         android:id="@+id/nav_pedidos"
@@ -45,6 +51,7 @@
         <action
             android:id="@+id/action_nav_pedidos_to_detallePedidoFragment"
             app:destination="@id/detallePedidoFragment" />
+
     </fragment>
 
     <fragment
