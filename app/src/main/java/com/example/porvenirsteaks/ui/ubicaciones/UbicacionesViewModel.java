@@ -29,6 +29,10 @@ public class UbicacionesViewModel extends AndroidViewModel {
         return repository.createUbicacion(request);
     }
 
+    public LiveData<Resource<Ubicacion>> updateUbicacion(int id, UbicacionRequest request) {
+        return repository.updateUbicacion(id, request);
+    }
+
     public LiveData<Resource<Boolean>> deleteUbicacion(int id) {
         return repository.deleteUbicacion(id);
     }

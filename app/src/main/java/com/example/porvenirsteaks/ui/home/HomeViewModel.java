@@ -35,7 +35,6 @@ public class HomeViewModel extends AndroidViewModel {
     private final PedidoRepository pedidoRepository;
     private final UbicacionRepository ubicacionRepository;
     private final RepartidorRepository repartidorRepository;
-    private final UserManager userManager;
 
     // LiveData compartidos
     private final MutableLiveData<String> greeting = new MutableLiveData<>();
@@ -69,13 +68,12 @@ public class HomeViewModel extends AndroidViewModel {
         pedidoRepository = new PedidoRepository(application);
         ubicacionRepository = new UbicacionRepository(application);
         repartidorRepository = new RepartidorRepository(application);
-        userManager = new UserManager(application);
 
         // Configurar datos iniciales
         initializeCommonData();
 
         // Determinar rol y cargar datos específicos
-        userRole.setValue(userManager.getUserRole(application));
+        userRole.setValue(UserManager.getUserRole(application));
         switch (userRole.getValue()) {
             case Constants.ROL_CLIENTE:
                 initializeClienteData();
@@ -94,7 +92,7 @@ public class HomeViewModel extends AndroidViewModel {
      */
     private void initializeCommonData() {
         // Obtener nombre del usuario y generar saludo
-        String userName = userManager.getUserName(getApplication());
+        String userName = UserManager.getUserName(getApplication());
         greeting.setValue("¡Hola, " + userName + "!");
 
         // Obtener fecha actual

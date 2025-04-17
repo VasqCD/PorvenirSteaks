@@ -143,13 +143,13 @@ public interface ApiService {
 
 
     // Repartidor Endpoints
-    @GET("pedidos/pendientes")
+    @GET("pedidos-pendientes")
     Call<List<Pedido>> getPedidosPendientes();
 
     @POST("user/solicitar-repartidor")
     Call<Map<String, Object>> solicitarSerRepartidor();
 
-    @POST("repartidor/ubicacion")
+    @POST("repartidor/actualizar-ubicacion")
     Call<Map<String, Object>> actualizarUbicacionRepartidor(@Body Map<String, Double> request);
 
     @POST("repartidor/disponibilidad")
