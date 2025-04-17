@@ -21,6 +21,7 @@ public class ProductosAdapter extends ListAdapter<Producto, ProductosAdapter.Pro
 
     public interface OnProductoClickListener {
         void onProductoClick(Producto producto);
+        void onAddToCartClick(Producto producto);  // Añadir este método
     }
 
     public ProductosAdapter(OnProductoClickListener listener) {
@@ -44,6 +45,11 @@ public class ProductosAdapter extends ListAdapter<Producto, ProductosAdapter.Pro
 
         holder.itemView.setOnClickListener(v -> {
             listener.onProductoClick(producto);
+        });
+
+        // Añadir listener para el botón de agregar al carrito
+        holder.binding.btnAddToCart.setOnClickListener(v -> {
+            listener.onAddToCartClick(producto);
         });
     }
 

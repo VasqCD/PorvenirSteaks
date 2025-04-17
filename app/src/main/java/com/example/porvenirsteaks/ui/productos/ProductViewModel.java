@@ -23,6 +23,20 @@ public class ProductViewModel extends AndroidViewModel {
     private MutableLiveData<Integer> categoriaSeleccionadaId = new MutableLiveData<>();
     private MutableLiveData<String> busqueda = new MutableLiveData<>();
 
+    private MutableLiveData<Boolean> refreshTrigger = new MutableLiveData<>();
+
+    public void forceRefresh() {
+        // Esto forzará una nueva carga de datos
+        refreshTrigger.setValue(true);
+    }
+
+
+
+    public void refreshProductos() {
+        // Reiniciar la carga de productos
+        productoRepository.getProductos();
+    }
+
     public ProductViewModel(@NonNull Application application) {
         super(application);
         productoRepository = new ProductoRepository(application);
@@ -30,6 +44,8 @@ public class ProductViewModel extends AndroidViewModel {
     }
 
     public LiveData<Resource<List<Producto>>> getProductos() {
+        // Si ya tenemos la solicitud en curso, forzamos una nueva
+        forceRefresh();
         return productoRepository.getProductos();
     }
 

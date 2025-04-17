@@ -11,9 +11,13 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 
+import com.example.porvenirsteaks.R;
+import com.example.porvenirsteaks.data.model.Producto;
 import com.example.porvenirsteaks.databinding.FragmentProductosBinding;
+import com.example.porvenirsteaks.ui.carrito.CarritoViewModel;
 import com.example.porvenirsteaks.ui.productos.adapters.CategoriasAdapter;
 import com.example.porvenirsteaks.ui.productos.adapters.ProductosAdapter;
 import com.example.porvenirsteaks.utils.Resource;
@@ -23,6 +27,11 @@ public class ProductosFragment extends Fragment {
     private ProductViewModel viewModel;
     private ProductosAdapter productosAdapter;
     private CategoriasAdapter categoriasAdapter;
+
+    // En ProductosFragment.java
+    private CarritoViewModel carritoViewModel;
+
+
 
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -34,17 +43,26 @@ public class ProductosFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
+        // Primero inicializa el ViewModel
         viewModel = new ViewModelProvider(this).get(ProductViewModel.class);
+
+        // Luego ya puedes usarlo
+        viewModel.setCategoriaSeleccionada(0);
 
         setupRecyclerViews();
         setupSearchView();
+
+        carritoViewModel = new ViewModelProvider(requireActivity()).get(CarritoViewModel.class);
+
         observeViewModel();
 
-        // Cargar datos iniciales
+        binding.progressBar.setVisibility(View.VISIBLE);
         viewModel.getCategorias();
-        viewModel.getProductos();
-    }
 
+        view.post(() -> {
+            viewModel.getProductos();
+        });
+    }
     private void setupRecyclerViews() {
         // Configurar RecyclerView de categorías
         categoriasAdapter = new CategoriasAdapter(categoriaId -> {
@@ -53,13 +71,25 @@ public class ProductosFragment extends Fragment {
         binding.recyclerViewCategorias.setAdapter(categoriasAdapter);
 
         // Configurar RecyclerView de productos
-        productosAdapter = new ProductosAdapter(producto -> {
-            // Navegar a detalle de producto
-            Bundle args = new Bundle();
-            args.putInt("producto_id", producto.getId());
+        productosAdapter = new ProductosAdapter(new ProductosAdapter.OnProductoClickListener() {
+            @Override
+            public void onProductoClick(Producto producto) {
+                Bundle args = new Bundle();
+                args.putInt("producto_id", producto.getId());
+                Navigation.findNavController(requireView())
+                        .navigate(R.id.detalleProductoFragment, args);
+            }
 
-            // Navegar usando NavController
-            // navController.navigate(R.id.action_productosFragment_to_detalleProductoFragment, args);
+            @Override
+            public void onAddToCartClick(Producto producto) {
+                carritoViewModel.addToCart(producto, 1);
+                Toast.makeText(requireContext(),
+                        "Producto agregado al carrito",
+                        Toast.LENGTH_SHORT).show();
+
+                Navigation.findNavController(requireView())
+                        .navigate(R.id.carritoFragment);
+            }
         });
         binding.recyclerViewProductos.setLayoutManager(new GridLayoutManager(requireContext(), 2));
         binding.recyclerViewProductos.setAdapter(productosAdapter);
@@ -72,6 +102,7 @@ public class ProductosFragment extends Fragment {
                 viewModel.setBusqueda(query);
                 return true;
             }
+
 
             @Override
             public boolean onQueryTextChange(String newText) {

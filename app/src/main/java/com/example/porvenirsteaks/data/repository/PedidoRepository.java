@@ -27,6 +27,9 @@ public class PedidoRepository {
     private ApiService apiService;
     private Context context;
     private static final String TAG = "PedidoRepository";
+    private String estado_anterior = "creado"; // Valor por defecto para nuevos pedidos
+
+
 
     public PedidoRepository(Context context) {
         this.context = context;
